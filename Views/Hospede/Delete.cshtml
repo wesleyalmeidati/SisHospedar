@@ -1,0 +1,17 @@
+@model Hospede
+@{
+    ViewData["Title"] = "Excluir Hóspede";
+}
+<h2>Excluir Hóspede</h2>
+<div class="alert alert-warning">Tem certeza que deseja excluir este hóspede?</div>
+<dl class="row">
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Nome)</dt>
+    <dd class="col-sm-9">@Model.Nome</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Cpf)</dt>
+    <dd class="col-sm-9">@Model.Cpf</dd>
+</dl>
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="HospedeId" />
+    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>

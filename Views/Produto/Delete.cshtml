@@ -1,0 +1,10 @@
+@model Produto
+@{ ViewData["Title"] = "Excluir Produto"; }
+<h2>Excluir Produto</h2>
+<div class="alert alert-warning">Tem certeza que deseja excluir este produto?</div>
+<dl class="row"><dt class="col-sm-3">Nome</dt><dd class="col-sm-9">@Model.Nome</dd></dl>
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="ProdutoId" />
+    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>

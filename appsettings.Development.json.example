@@ -1,0 +1,6 @@
+{
+  "_comentario": "Copie este arquivo para 'appsettings.Development.json' (que é ignorado pelo Git) e preencha com sua senha real local. Nunca renomeie para appsettings.json nem remova do .gitignore.",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=SisHospedar;User Id=sa;Password=SUA_SENHA_REAL_AQUI;TrustServerCertificate=True;"
+  }
+}

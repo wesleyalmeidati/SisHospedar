@@ -1,0 +1,47 @@
+@model IEnumerable<Hospede>
+@{
+    ViewData["Title"] = "Hóspedes";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Hóspedes</h2>
+    <a class="btn btn-primary" asp-action="Create">+ Novo Hóspede</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <input type="text" name="busca" value="@ViewData["Busca"]" class="form-control" placeholder="Buscar por nome ou CPF" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(m => m.Nome)</th>
+            <th>@Html.DisplayNameFor(m => m.Cpf)</th>
+            <th>@Html.DisplayNameFor(m => m.Telefone)</th>
+            <th>@Html.DisplayNameFor(m => m.DataNascimento)</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Nome</td>
+            <td>@item.Cpf</td>
+            <td>@item.Telefone</td>
+            <td>@item.DataNascimento.ToShortDateString()</td>
+            <td>
+                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.HospedeId">Editar</a>
+                <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-route-id="@item.HospedeId">Detalhes</a>
+                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@item.HospedeId">Excluir</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

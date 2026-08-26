@@ -1,0 +1,10 @@
+@model Apartamento
+@{ ViewData["Title"] = "Excluir Apartamento"; }
+<h2>Excluir Apartamento</h2>
+<div class="alert alert-warning">Tem certeza que deseja excluir este apartamento?</div>
+<dl class="row"><dt class="col-sm-3">Número</dt><dd class="col-sm-9">@Model.Numero</dd></dl>
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="ApartamentoId" />
+    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>

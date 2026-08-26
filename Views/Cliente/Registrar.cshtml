@@ -1,0 +1,43 @@
+@model Hospede
+@{ ViewData["Title"] = "Criar Conta"; }
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <p class="section-eyebrow">Hotel Solaris</p>
+        <h2>Criar sua conta</h2>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <form asp-action="Registrar" method="post">
+            <div class="mb-3">
+                <label asp-for="Nome" class="form-label"></label>
+                <input asp-for="Nome" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Cpf" class="form-label"></label>
+                <input asp-for="Cpf" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" type="email" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Telefone" class="form-label"></label>
+                <input asp-for="Telefone" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="DataNascimento" class="form-label"></label>
+                <input asp-for="DataNascimento" class="form-control" type="date" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Login" class="form-label"></label>
+                <input asp-for="Login" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Senha</label>
+                <input name="senha" type="password" class="form-control" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Criar Conta</button>
+            <p class="text-center mt-3 mb-0">
+                Já tem conta? <a asp-action="Login">Entrar</a>
+            </p>
+        </form>
+    </div>
+</div>

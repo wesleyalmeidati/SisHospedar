@@ -1,0 +1,24 @@
+@model Reserva
+@{ ViewData["Title"] = "Fazer Reserva"; }
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <p class="section-eyebrow">Hotel Solaris</p>
+        <h2>Fazer uma Reserva</h2>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label class="form-label">Apartamento</label>
+                <select name="ApartamentoId" class="form-select" asp-items="ViewBag.ApartamentoId"></select>
+            </div>
+            <div class="mb-3">
+                <label asp-for="DataEntrada" class="form-label"></label>
+                <input asp-for="DataEntrada" class="form-control" type="date" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="DataSaidaPrevista" class="form-label"></label>
+                <input asp-for="DataSaidaPrevista" class="form-control" type="date" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Solicitar Reserva</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+@model Hospedagem
+@{ ViewData["Title"] = "Detalhes da Hospedagem"; }
+<h2>Detalhes da Hospedagem</h2>
+<dl class="row">
+    <dt class="col-sm-3">Hóspede</dt><dd class="col-sm-9">@Model.Hospede?.Nome</dd>
+    <dt class="col-sm-3">Apartamento</dt><dd class="col-sm-9">@Model.Apartamento?.Numero</dd>
+    <dt class="col-sm-3">Entrada</dt><dd class="col-sm-9">@Model.DataEntrada.ToShortDateString()</dd>
+    <dt class="col-sm-3">Saída</dt><dd class="col-sm-9">@(Model.DataSaida?.ToShortDateString() ?? "-")</dd>
+    <dt class="col-sm-3">Total de Consumo</dt><dd class="col-sm-9">@Model.TotalConsumo.ToString("C")</dd>
+</dl>
+
+<h4>Consumos</h4>
+<table class="table table-sm">
+    <thead><tr><th>Produto</th><th>Qtd.</th><th>Valor Unit.</th><th>Total</th></tr></thead>
+    <tbody>
+    @foreach (var c in Model.Consumos)
+    {
+        <tr>
+            <td>@c.Produto?.Nome</td>
+            <td>@c.Quantidade</td>
+            <td>@c.ValorUnitario.ToString("C")</td>
+            <td>@c.ValorTotal.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+@if (!Model.Finalizada)
+{
+    <a class="btn btn-outline-primary btn-sm" asp-controller="Consumo" asp-action="Create" asp-route-hospedagemId="@Model.HospedagemId">+ Lançar Consumo</a>
+}
+<a asp-action="Index" class="btn btn-secondary btn-sm">Voltar</a>

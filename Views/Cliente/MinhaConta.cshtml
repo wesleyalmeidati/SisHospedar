@@ -1,0 +1,79 @@
+@model Hospedagem
+@{ ViewData["Title"] = "Minha Conta"; }
+@{ var reservas = ViewData["Reservas"] as IEnumerable<Reserva>; }
+
+<p class="section-eyebrow">Hotel Solaris</p>
+<h2>Minha Conta</h2>
+
+@if (Model == null)
+{
+    <div class="alert alert-info">Você não possui uma hospedagem ativa no momento.</div>
+
+    @if (reservas != null && reservas.Any())
+    {
+        <h4 class="mt-4">Reservas pendentes de confirmação</h4>
+        <ul class="list-group">
+            @foreach (var r in reservas)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Apartamento @r.Apartamento?.Numero — @r.DataEntrada.ToShortDateString() até @r.DataSaidaPrevista.ToShortDateString()
+                    <span class="badge bg-warning">Aguardando confirmação</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <a class="btn btn-primary mt-4" asp-controller="Reserva" asp-action="Create">Fazer nova reserva</a>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Estadia atual — Apartamento @Model.Apartamento?.Numero</h5>
+            <p class="mb-1"><strong>Entrada:</strong> @Model.DataEntrada.ToShortDateString()</p>
+            <p class="mb-1"><strong>Saída prevista:</strong> @(Model.DataSaida?.ToShortDateString() ?? "-")</p>
+            <p class="mb-3"><strong>Total consumido:</strong> @Model.TotalConsumo.ToString("C")</p>
+
+            @if (Model.SolicitouEncerramento)
+            {
+                <div class="alert alert-warning">Encerramento solicitado — aguardando confirmação da recepção.</div>
+            }
+            else
+            {
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <form asp-action="Prorrogar" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="hospedagemId" value="@Model.HospedagemId" />
+                            <input type="date" name="novaDataSaida" class="form-control" required />
+                            <button type="submit" class="btn btn-outline-secondary text-nowrap">Prorrogar</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form asp-action="SolicitarEncerramento" method="post">
+                            <input type="hidden" name="hospedagemId" value="@Model.HospedagemId" />
+                            <button type="submit" class="btn btn-outline-danger w-100">Solicitar Encerramento</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <h4>Itens consumidos</h4>
+    <div class="table-responsive">
+    <table class="table table-sm">
+        <thead><tr><th>Produto</th><th>Qtd.</th><th>Valor Unit.</th><th>Total</th></tr></thead>
+        <tbody>
+        @foreach (var c in Model.Consumos)
+        {
+            <tr>
+                <td>@c.Produto?.Nome</td>
+                <td>@c.Quantidade</td>
+                <td>@c.ValorUnitario.ToString("C")</td>
+                <td>@c.ValorTotal.ToString("C")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

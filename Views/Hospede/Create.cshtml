@@ -1,0 +1,33 @@
+@model Hospede
+@{
+    ViewData["Title"] = "Novo Hóspede";
+}
+<h2>Novo Hóspede</h2>
+<div class="row">
+    <div class="col-md-5">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-3">
+                <label asp-for="Nome" class="form-label"></label>
+                <input asp-for="Nome" class="form-control" />
+                <span asp-validation-for="Nome" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Cpf" class="form-label"></label>
+                <input asp-for="Cpf" class="form-control" />
+                <span asp-validation-for="Cpf" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Telefone" class="form-label"></label>
+                <input asp-for="Telefone" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="DataNascimento" class="form-label"></label>
+                <input asp-for="DataNascimento" class="form-control" type="date" />
+                <span asp-validation-for="DataNascimento" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>

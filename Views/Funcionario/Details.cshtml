@@ -1,0 +1,9 @@
+@model Funcionario
+@{ ViewData["Title"] = "Detalhes do Funcionário"; }
+<h2>Detalhes do Funcionário</h2>
+<dl class="row">
+    <dt class="col-sm-3">Nome</dt><dd class="col-sm-9">@Model.Nome</dd>
+    <dt class="col-sm-3">Cargo</dt><dd class="col-sm-9">@Model.Cargo</dd>
+    <dt class="col-sm-3">Login</dt><dd class="col-sm-9">@Model.Login</dd>
+</dl>
+<a asp-action="Index" class="btn btn-secondary">Voltar</a>

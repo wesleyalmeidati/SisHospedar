@@ -1,0 +1,104 @@
+@using SisHospedar.Models
+@{
+    ViewData["Title"] = "Painel";
+    var cargo = (CargoFuncionario)ViewData["Cargo"]!;
+}
+
+<p class="section-eyebrow">Painel — @cargo</p>
+<h2>Olá, @Context.Session.GetString("FuncionarioNome")</h2>
+
+@if (cargo == CargoFuncionario.Administrador || cargo == CargoFuncionario.Gerente)
+{
+    <div class="row g-3 mt-2">
+        <div class="col-md-3 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Apartamentos</p>
+                <h3>@ViewData["TotalApartamentos"]</h3>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Ocupados agora</p>
+                <h3>@ViewData["ApartamentosOcupados"]</h3>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Reservas pendentes</p>
+                <h3>@ViewData["ReservasPendentes"]</h3>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Funcionários</p>
+                <h3>@ViewData["TotalFuncionarios"]</h3>
+            </div></div>
+        </div>
+    </div>
+    <div class="mt-4 d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-secondary" asp-controller="Apartamento" asp-action="Index">Gerenciar Apartamentos</a>
+        <a class="btn btn-outline-secondary" asp-controller="Produto" asp-action="Index">Gerenciar Produtos</a>
+        <a class="btn btn-outline-secondary" asp-controller="Funcionario" asp-action="Index">Gerenciar Funcionários</a>
+        <a class="btn btn-outline-secondary" asp-controller="Reserva" asp-action="Index">Ver Reservas</a>
+    </div>
+}
+else if (cargo == CargoFuncionario.Recepcionista)
+{
+    <div class="row g-3 mt-2">
+        <div class="col-md-4 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Reservas pendentes</p>
+                <h3>@ViewData["ReservasPendentes"]</h3>
+            </div></div>
+        </div>
+        <div class="col-md-4 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Pedidos de encerramento</p>
+                <h3>@ViewData["PedidosEncerramento"]</h3>
+            </div></div>
+        </div>
+        <div class="col-md-4 col-6">
+            <div class="card"><div class="card-body">
+                <p class="text-muted mb-1">Hospedagens ativas</p>
+                <h3>@ViewData["HospedagensAtivas"]</h3>
+            </div></div>
+        </div>
+    </div>
+    <div class="mt-4 d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-secondary" asp-controller="Reserva" asp-action="Index">Confirmar Reservas</a>
+        <a class="btn btn-outline-secondary" asp-controller="Hospedagem" asp-action="Index">Ver Hospedagens</a>
+        <a class="btn btn-outline-secondary" asp-controller="Hospede" asp-action="Index">Cadastrar Hóspede (balcão)</a>
+    </div>
+}
+else if (cargo == CargoFuncionario.Limpeza || cargo == CargoFuncionario.Manutencao)
+{
+    var apartamentos = ViewData["Apartamentos"] as IEnumerable<Apartamento>;
+    <p class="text-muted">Status atual dos apartamentos:</p>
+    <div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Número</th><th>Status</th></tr></thead>
+        <tbody>
+        @foreach (var a in apartamentos ?? Enumerable.Empty<Apartamento>())
+        {
+            <tr><td>@a.Numero</td><td>@a.Status</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}
+else if (cargo == CargoFuncionario.Vallet)
+{
+    var hospedagens = ViewData["HospedagensAtivas"] as IEnumerable<Hospedagem>;
+    <p class="text-muted">Hóspedes atualmente no hotel:</p>
+    <div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Hóspede</th><th>Apartamento</th></tr></thead>
+        <tbody>
+        @foreach (var h in hospedagens ?? Enumerable.Empty<Hospedagem>())
+        {
+            <tr><td>@h.Hospede?.Nome</td><td>@h.Apartamento?.Numero</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}

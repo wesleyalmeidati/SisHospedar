@@ -1,0 +1,19 @@
+@model Consumo
+@{ ViewData["Title"] = "Lançar Consumo"; }
+<h2>Lançar Consumo</h2>
+<div class="col-md-5">
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" name="HospedagemId" value="@ViewData["HospedagemId"]" />
+    <div class="mb-3">
+        <label class="form-label">Produto</label>
+        <select name="ProdutoId" class="form-select" asp-items="ViewBag.ProdutoId"></select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Quantidade" class="form-label"></label>
+        <input asp-for="Quantidade" class="form-control" type="number" min="1" value="1" />
+    </div>
+    <button type="submit" class="btn btn-primary">Lançar</button>
+    <a asp-controller="Hospedagem" asp-action="Details" asp-route-id="@ViewData["HospedagemId"]" class="btn btn-secondary">Cancelar</a>
+</form>
+</div>

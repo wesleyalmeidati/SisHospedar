@@ -1,0 +1,39 @@
+@model IEnumerable<Hospedagem>
+@{ ViewData["Title"] = "Hospedagens"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Hospedagens</h2>
+    <a class="btn btn-primary" asp-action="Create">+ Nova Hospedagem</a>
+</div>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>Hóspede</th><th>Apartamento</th><th>Entrada</th><th>Saída</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Hospede?.Nome</td>
+            <td>@item.Apartamento?.Numero</td>
+            <td>@item.DataEntrada.ToShortDateString()</td>
+            <td>@(item.DataSaida?.ToShortDateString() ?? "-")</td>
+            <td>
+                @if (item.Finalizada)
+                {
+                    <span class="badge bg-secondary">Finalizada</span>
+                }
+                else
+                {
+                    <span class="badge bg-success">Em andamento</span>
+                }
+            </td>
+            <td>
+                <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-route-id="@item.HospedagemId">Detalhes</a>
+                @if (!item.Finalizada)
+                {
+                    <a class="btn btn-sm btn-outline-warning" asp-action="Finalizar" asp-route-id="@item.HospedagemId">Finalizar</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

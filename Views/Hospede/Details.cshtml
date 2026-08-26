@@ -1,0 +1,17 @@
+@model Hospede
+@{
+    ViewData["Title"] = "Detalhes do Hóspede";
+}
+<h2>Detalhes do Hóspede</h2>
+<dl class="row">
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Nome)</dt>
+    <dd class="col-sm-9">@Model.Nome</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Cpf)</dt>
+    <dd class="col-sm-9">@Model.Cpf</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Telefone)</dt>
+    <dd class="col-sm-9">@Model.Telefone</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.DataNascimento)</dt>
+    <dd class="col-sm-9">@Model.DataNascimento.ToShortDateString()</dd>
+</dl>
+<a asp-action="Edit" asp-route-id="@Model.HospedeId" class="btn btn-outline-secondary">Editar</a>
+<a asp-action="Index" class="btn btn-secondary">Voltar</a>

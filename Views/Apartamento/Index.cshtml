@@ -1,0 +1,35 @@
+@model IEnumerable<Apartamento>
+@{ ViewData["Title"] = "Apartamentos"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Apartamentos</h2>
+    <a class="btn btn-primary" asp-action="Create">+ Novo Apartamento</a>
+</div>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>Número</th><th>Capacidade</th><th>Diária</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Numero</td>
+            <td>@item.Capacidade</td>
+            <td>@item.ValorDiaria.ToString("C")</td>
+            <td>
+                @{
+                    var badge = item.Status switch {
+                        StatusApartamento.Disponivel => "success",
+                        StatusApartamento.Ocupado => "danger",
+                        _ => "warning"
+                    };
+                }
+                <span class="badge bg-@badge">@item.Status</span>
+            </td>
+            <td>
+                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.ApartamentoId">Editar</a>
+                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@item.ApartamentoId">Excluir</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

@@ -1,0 +1,16 @@
+@model Apartamento
+@{ ViewData["Title"] = "Novo Apartamento"; }
+<h2>Novo Apartamento</h2>
+<div class="col-md-5">
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="Numero" class="form-label"></label><input asp-for="Numero" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Capacidade" class="form-label"></label><input asp-for="Capacidade" class="form-control" type="number" /></div>
+    <div class="mb-3"><label asp-for="ValorDiaria" class="form-label"></label><input asp-for="ValorDiaria" class="form-control" type="number" step="0.01" /></div>
+    <div class="mb-3"><label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<StatusApartamento>()"></select>
+    </div>
+    <button type="submit" class="btn btn-primary">Salvar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+</div>

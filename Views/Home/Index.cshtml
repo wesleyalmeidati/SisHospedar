@@ -1,0 +1,87 @@
+@model IEnumerable<Apartamento>
+@{
+    ViewData["Title"] = "Hotel Solaris";
+}
+
+<div class="hero-hotel">
+    <div class="hero-content">
+        <p class="hero-eyebrow">Hotel Solaris</p>
+        <h1 class="hero-title">Sua estadia, do jeito que deveria ser.</h1>
+        <p class="hero-lead">Conforto, atenção aos detalhes e a hospitalidade que só um hotel de verdade oferece. Reserve online em poucos minutos.</p>
+        <div class="hero-actions">
+            @if (Context.Session.GetString("HospedeNome") != null)
+            {
+                <a class="btn btn-brass btn-lg" asp-controller="Reserva" asp-action="Create">Fazer uma Reserva</a>
+            }
+            else
+            {
+                <a class="btn btn-brass btn-lg" asp-controller="Cliente" asp-action="Registrar">Criar Conta e Reservar</a>
+                <a class="btn btn-outline-hero btn-lg" asp-controller="Cliente" asp-action="Login">Já sou hóspede</a>
+            }
+        </div>
+    </div>
+</div>
+
+<section class="mt-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <p class="section-eyebrow">Acomodações</p>
+            <h2>Quartos disponíveis</h2>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">No momento não há quartos disponíveis para reserva. Volte em breve.</p>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var quarto in Model)
+            {
+                <div class="col-md-4">
+                    <div class="room-card">
+                        <div class="room-card-header">
+                            <span class="room-number">Nº @quarto.Numero</span>
+                        </div>
+                        <div class="room-card-body">
+                            <p class="room-capacity">Até @quarto.Capacidade hóspedes</p>
+                            <p class="room-price">@quarto.ValorDiaria.ToString("C") <span>/ noite</span></p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<section class="amenities mt-5">
+    <p class="section-eyebrow">Comodidades</p>
+    <h2 class="mb-4">Tudo pensado para você</h2>
+    <div class="row g-4">
+        <div class="col-md-3 col-6">
+            <div class="amenity-item">
+                <span class="amenity-icon">☕</span>
+                <p>Café da manhã incluso</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="amenity-item">
+                <span class="amenity-icon">🅿️</span>
+                <p>Vallet 24 horas</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="amenity-item">
+                <span class="amenity-icon">🧹</span>
+                <p>Limpeza diária</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="amenity-item">
+                <span class="amenity-icon">📶</span>
+                <p>Wi-Fi em todo o hotel</p>
+            </div>
+        </div>
+    </div>
+</section>

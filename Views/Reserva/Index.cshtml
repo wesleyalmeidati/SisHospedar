@@ -1,0 +1,40 @@
+@model IEnumerable<Reserva>
+@{ ViewData["Title"] = "Reservas"; }
+<h2>Reservas</h2>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>Hóspede</th><th>Apartamento</th><th>Entrada</th><th>Saída Prevista</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr>
+            <td>@r.Hospede?.Nome</td>
+            <td>@r.Apartamento?.Numero</td>
+            <td>@r.DataEntrada.ToShortDateString()</td>
+            <td>@r.DataSaidaPrevista.ToShortDateString()</td>
+            <td>
+                @{
+                    var badge = r.Status switch {
+                        StatusReserva.Pendente => "warning",
+                        StatusReserva.Confirmada => "success",
+                        _ => "secondary"
+                    };
+                }
+                <span class="badge bg-@badge">@r.Status</span>
+            </td>
+            <td>
+                @if (r.Status == StatusReserva.Pendente)
+                {
+                    <form asp-action="Confirmar" asp-route-id="@r.ReservaId" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Confirmar</button>
+                    </form>
+                    <form asp-action="Cancelar" asp-route-id="@r.ReservaId" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

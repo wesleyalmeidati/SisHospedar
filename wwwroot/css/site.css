@@ -1,0 +1,507 @@
+/* ===== SisHospedar — Design System v2 =====
+   Referência: hotelaria boutique moderna (Ace Hotel, Cloudbeds) —
+   espaço generoso, sombras suaves, vidro fosco no menu, cantos macios.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #16332B;
+  --ink-dark: #0F2620;
+  --brass: #B8935F;
+  --brass-dark: #9C7A45;
+  --brass-light: #E4CFA8;
+  --paper: #FAF8F3;
+  --surface: #FFFFFF;
+  --text: #23261F;
+  --text-muted: #7A796F;
+  --success: #4C7A5D;
+  --danger: #A24E3D;
+  --warning: #B8935F;
+  --border: #EAE5D9;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px rgba(22, 51, 43, 0.06);
+  --shadow-md: 0 8px 24px rgba(22, 51, 43, 0.08);
+  --shadow-lg: 0 16px 40px rgba(22, 51, 43, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--paper);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  padding-bottom: 70px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .navbar-brand {
+  font-family: 'Fraunces', Georgia, serif;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+}
+
+h2 {
+  font-weight: 600;
+  font-size: 1.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.container { max-width: 1180px; }
+
+/* ---- Navbar: vidro fosco fixo no topo ---- */
+.navbar.bg-dark {
+  background-color: rgba(22, 51, 43, 0.92) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(184, 147, 95, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.navbar-brand {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--brass) !important;
+  letter-spacing: 0.02em;
+}
+
+.navbar-dark .nav-link {
+  color: rgba(250, 248, 243, 0.8) !important;
+  font-weight: 500;
+  font-size: 0.92rem;
+  padding: 0.5rem 0.9rem !important;
+  border-radius: 100px;
+  transition: all 0.18s ease;
+}
+
+.navbar-dark .nav-link:hover {
+  color: var(--paper) !important;
+  background-color: rgba(184, 147, 95, 0.18);
+}
+
+.navbar .btn-outline-light {
+  border-color: var(--brass);
+  color: var(--brass);
+  border-radius: 100px;
+  font-size: 0.85rem;
+  padding: 0.4rem 1.1rem;
+}
+
+.navbar .btn-outline-light:hover {
+  background-color: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink);
+}
+
+.navbar-toggler {
+  border-color: rgba(184, 147, 95, 0.4);
+}
+
+/* ---- Cards ---- */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-body { padding: 1.5rem; }
+
+.card-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ---- Botões ---- */
+.btn {
+  border-radius: 100px;
+  font-weight: 500;
+  padding: 0.55rem 1.3rem;
+  font-size: 0.92rem;
+  transition: all 0.18s ease;
+}
+
+.btn-sm { padding: 0.35rem 0.9rem; font-size: 0.82rem; }
+
+.btn-primary {
+  background-color: var(--ink);
+  border-color: var(--ink);
+}
+
+.btn-primary:hover {
+  background-color: var(--ink-dark);
+  border-color: var(--ink-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-outline-secondary {
+  color: var(--ink);
+  border-color: var(--border);
+  background-color: var(--surface);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--ink);
+  border-color: var(--ink);
+}
+
+.btn-outline-info {
+  color: var(--ink);
+  border-color: var(--brass);
+}
+
+.btn-outline-info:hover {
+  background-color: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink-dark);
+}
+
+.btn-outline-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  background-color: var(--surface);
+}
+
+.btn-outline-danger:hover {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-warning {
+  background-color: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink-dark);
+}
+
+.btn-warning:hover {
+  background-color: var(--brass-dark);
+  border-color: var(--brass-dark);
+}
+
+.btn-secondary {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ---- Tabelas (com wrapper responsivo) ---- */
+.table-responsive {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--surface);
+}
+
+.table {
+  background-color: var(--surface);
+  margin-bottom: 0;
+}
+
+.table thead {
+  background-color: var(--ink);
+}
+
+.table thead th {
+  background-color: var(--ink) !important;
+  color: var(--paper);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: none;
+  padding: 1rem 1.1rem;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.9rem 1.1rem;
+  vertical-align: middle;
+  border-color: var(--border);
+  font-size: 0.94rem;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(184, 147, 95, 0.04);
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(184, 147, 95, 0.08);
+}
+
+/* ---- Badges de status ---- */
+.badge {
+  font-weight: 500;
+  font-size: 0.76rem;
+  padding: 0.42em 0.85em;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+
+.badge.bg-success { background-color: var(--success) !important; }
+.badge.bg-danger { background-color: var(--danger) !important; }
+.badge.bg-warning { background-color: var(--brass) !important; color: var(--ink-dark) !important; }
+.badge.bg-secondary { background-color: var(--text-muted) !important; }
+
+/* ---- Formulários ---- */
+.form-control, .form-select {
+  border-radius: var(--radius-sm);
+  border-color: var(--border);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 0.2rem rgba(184, 147, 95, 0.15);
+}
+
+.form-label {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.88rem;
+  margin-bottom: 0.4rem;
+}
+
+/* ---- Hero / bloco de destaque na Home ---- */
+.bg-light.rounded-3 {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-dark) 100%) !important;
+  color: var(--paper);
+  border-radius: var(--radius) !important;
+  padding: 3rem 2.5rem !important;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-light.rounded-3::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(184, 147, 95, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.bg-light.rounded-3 .display-6 {
+  color: var(--brass-light);
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 2.4rem;
+}
+
+.bg-light.rounded-3 .lead {
+  color: rgba(250, 248, 243, 0.85);
+  font-size: 1.05rem;
+}
+
+.bg-light.rounded-3 .btn-primary {
+  background-color: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink-dark);
+  font-weight: 600;
+}
+
+.bg-light.rounded-3 .btn-primary:hover {
+  background-color: var(--brass-dark);
+}
+
+/* ---- Alertas ---- */
+.alert {
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 0.92rem;
+}
+
+.alert-success {
+  background-color: rgba(76, 122, 93, 0.12);
+  color: var(--success);
+}
+
+.alert-warning {
+  background-color: rgba(184, 147, 95, 0.15);
+  color: var(--brass-dark);
+}
+
+/* ---- Footer ---- */
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background-color: var(--ink);
+  color: rgba(250, 248, 243, 0.55);
+  font-size: 0.8rem;
+  border-top: 1px solid rgba(184, 147, 95, 0.25);
+}
+
+/* ==================== RESPONSIVO (celular) ==================== */
+@media (max-width: 767.98px) {
+  .container { padding-left: 1rem; padding-right: 1rem; }
+
+  h2 { font-size: 1.5rem; }
+
+  .bg-light.rounded-3 {
+    padding: 2rem 1.5rem !important;
+  }
+  .bg-light.rounded-3 .display-6 { font-size: 1.8rem; }
+
+  /* Menu vira lista vertical ao abrir no celular */
+  .navbar-collapse {
+    background-color: var(--ink);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .navbar-nav { gap: 0.25rem; }
+
+  /* Botões de ação nas tabelas empilham no celular */
+  td .btn { margin-bottom: 0.25rem; }
+
+  /* Cards de resumo na Home empilham automaticamente (col-md-4 do Bootstrap já faz isso) */
+
+  .table td, .table th { font-size: 0.85rem; padding: 0.7rem 0.6rem; }
+}
+
+/* ==================== Home pública (Hotel Solaris) ==================== */
+.hero-hotel {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-dark) 100%);
+  border-radius: var(--radius);
+  padding: 4rem 3rem;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-hotel::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -8%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(184, 147, 95, 0.28) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-content { max-width: 620px; position: relative; }
+
+.hero-eyebrow {
+  color: var(--brass);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero-title {
+  font-family: 'Fraunces', serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  color: var(--paper);
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.hero-lead {
+  color: rgba(250, 248, 243, 0.82);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.btn-brass {
+  background-color: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink-dark);
+  font-weight: 600;
+}
+.btn-brass:hover { background-color: var(--brass-dark); color: var(--ink-dark); }
+
+.btn-outline-hero {
+  background: transparent;
+  border: 1px solid rgba(250, 248, 243, 0.4);
+  color: var(--paper);
+}
+.btn-outline-hero:hover { background-color: rgba(250, 248, 243, 0.1); color: var(--paper); }
+
+.section-eyebrow {
+  color: var(--brass-dark);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+}
+
+.room-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.room-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+.room-card-header {
+  background: linear-gradient(135deg, var(--ink), var(--ink-dark));
+  padding: 1.5rem;
+}
+
+.room-number {
+  color: var(--brass-light);
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.room-card-body { padding: 1.25rem 1.5rem; }
+
+.room-capacity { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.5rem; }
+
+.room-price {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+.room-price span { font-size: 0.8rem; font-weight: 400; color: var(--text-muted); }
+
+.amenities { padding: 2rem 0; }
+
+.amenity-item {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.amenity-icon { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
+
+.amenity-item p { margin: 0; font-weight: 500; color: var(--ink); font-size: 0.92rem; }
+
+@media (max-width: 767.98px) {
+  .hero-hotel { padding: 2.5rem 1.5rem; }
+  .hero-title { font-size: 2rem; }
+  .hero-actions .btn { width: 100%; }
+}

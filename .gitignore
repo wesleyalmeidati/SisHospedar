@@ -1,0 +1,20 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Segredos locais - NUNCA versionar isso
+appsettings.Development.json
+appsettings.Local.json
+*.env
+
+# Banco de dados local (se usar SQLite em algum momento)
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
