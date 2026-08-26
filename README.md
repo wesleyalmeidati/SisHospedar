@@ -65,7 +65,7 @@ Este projeto começou como um sistema em **ASP.NET Web Forms + ADO.NET puro** (D
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/SEU_USUARIO/SisHospedar.git
+   git clone https://github.com/wesleysalesdev/SisHospedar.git
    cd SisHospedar
    ```
 
