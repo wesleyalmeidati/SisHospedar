@@ -1,21 +1,29 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
 using SisHospedar.Filters;
 using SisHospedar.Models;
+using SisHospedar.Services;
 
 namespace SisHospedar.Controllers
 {
-    // PT: Lança consumo de produtos durante uma hospedagem ativa, com baixa
-    //     atômica no estoque.
-    // EN: Records product consumption during an active stay, with an atomic
-    //     stock deduction.
+    // PT: Lança consumo de produtos durante uma hospedagem ativa. A validação e a
+    //     baixa atômica de estoque vivem em IConsumoService — o controller só cuida
+    //     de ModelState/View.
+    // EN: Records product consumption during an active stay. Validation and the
+    //     atomic stock deduction live in IConsumoService — the controller only
+    //     handles ModelState/View concerns.
     [RequerFuncionario]
     public class ConsumoController : Controller
     {
         private readonly AppDbContext _context;
-        public ConsumoController(AppDbContext context) => _context = context;
+        private readonly IConsumoService _consumoService;
+
+        public ConsumoController(AppDbContext context, IConsumoService consumoService)
+        {
+            _context = context;
+            _consumoService = consumoService;
+        }
 
         public IActionResult Create(int hospedagemId)
         {
@@ -24,49 +32,19 @@ namespace SisHospedar.Controllers
             return View();
         }
 
-        // PT: Valida hospedagem ativa e produto existente, copia o preço atual para
-        //     ValorUnitario (histórico) e decrementa o estoque de forma atômica.
-        // EN: Validates the stay is active and the product exists, copies the current
-        //     price into ValorUnitario (price history), and atomically deducts stock.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedagemId,ProdutoId,Quantidade")] Consumo consumo)
         {
-            var hospedagem = await _context.Hospedagens.FindAsync(consumo.HospedagemId);
-            if (hospedagem == null || hospedagem.Finalizada)
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError("", "Hospedagem inválida ou já finalizada.");
-            }
-
-            var produto = await _context.Produtos.FindAsync(consumo.ProdutoId);
-            if (produto == null)
-            {
-                ModelState.AddModelError("", "Produto não encontrado.");
-            }
-
-            if (ModelState.IsValid && produto != null)
-            {
-                consumo.ValorUnitario = produto.Preco;
-
-                // PT: Decremento atômico no banco (WHERE Estoque >= Quantidade) para evitar
-                //     que duas requisições concorrentes deixem o estoque negativo (TOCTOU).
-                // EN: Atomic DB decrement (WHERE Estoque >= Quantidade) to prevent two
-                //     concurrent requests from pushing stock negative (TOCTOU race).
-                var linhasAfetadas = await _context.Produtos
-                    .Where(p => p.ProdutoId == consumo.ProdutoId && p.Estoque >= consumo.Quantidade)
-                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Estoque, p => p.Estoque - consumo.Quantidade));
-
-                if (linhasAfetadas == 0)
+                var (sucesso, erro) = await _consumoService.RegistrarAsync(consumo);
+                if (sucesso)
                 {
-                    ModelState.AddModelError("", "Estoque insuficiente para este produto.");
-                }
-                else
-                {
-                    _context.Add(consumo);
-                    await _context.SaveChangesAsync();
                     TempData["Sucesso"] = "Consumo lançado com sucesso.";
                     return RedirectToAction("Details", "Hospedagem", new { id = consumo.HospedagemId });
                 }
+                ModelState.AddModelError("", erro!);
             }
 
             ViewData["HospedagemId"] = consumo.HospedagemId;

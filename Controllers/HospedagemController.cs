@@ -4,18 +4,27 @@ using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
 using SisHospedar.Filters;
 using SisHospedar.Models;
+using SisHospedar.Services;
 
 namespace SisHospedar.Controllers
 {
     // PT: Gerencia o check-in (Create), consulta e o check-out (Finalizar) das
-    //     estadias. Mantém Apartamento.Status sincronizado a cada transição.
-    // EN: Manages check-in (Create), lookup, and check-out (Finalizar) of stays.
-    //     Keeps Apartamento.Status in sync at every transition.
+    //     estadias. As regras de negócio (ocupar/liberar Apartamento.Status) vivem em
+    //     IHospedagemService — o controller só cuida de ModelState/View.
+    // EN: Manages check-in (Create), lookup, and check-out (Finalizar) of stays. The
+    //     business rules (occupying/freeing Apartamento.Status) live in
+    //     IHospedagemService — the controller only handles ModelState/View concerns.
     [RequerFuncionario]
     public class HospedagemController : Controller
     {
         private readonly AppDbContext _context;
-        public HospedagemController(AppDbContext context) => _context = context;
+        private readonly IHospedagemService _hospedagemService;
+
+        public HospedagemController(AppDbContext context, IHospedagemService hospedagemService)
+        {
+            _context = context;
+            _hospedagemService = hospedagemService;
+        }
 
         public async Task<IActionResult> Index()
         {
@@ -45,29 +54,23 @@ namespace SisHospedar.Controllers
             return View();
         }
 
-        // PT: Check-in feito diretamente pela recepção (sem Reserva prévia). Revalida
-        //     no servidor se o apartamento ainda está Disponivel antes de ocupá-lo.
-        // EN: Check-in performed directly by reception (no prior Reserva). Re-validates
-        //     server-side that the room is still Disponivel before occupying it.
+        // PT: Check-in feito diretamente pela recepção (sem Reserva prévia). A revalidação
+        //     de disponibilidade do apartamento acontece dentro do service.
+        // EN: Check-in performed directly by reception (no prior Reserva). Room
+        //     availability re-validation happens inside the service.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedeId,ApartamentoId,DataEntrada")] Hospedagem hospedagem)
         {
             if (ModelState.IsValid)
             {
-                var apartamento = await _context.Apartamentos.FindAsync(hospedagem.ApartamentoId);
-                if (apartamento == null || apartamento.Status != StatusApartamento.Disponivel)
+                var (sucesso, erro) = await _hospedagemService.AbrirCheckInAsync(hospedagem);
+                if (sucesso)
                 {
-                    ModelState.AddModelError("", "Apartamento indisponível para hospedagem.");
-                    CarregarListas();
-                    return View(hospedagem);
+                    TempData["Sucesso"] = "Hospedagem registrada com sucesso.";
+                    return RedirectToAction(nameof(Index));
                 }
-
-                apartamento.Status = StatusApartamento.Ocupado;
-                _context.Add(hospedagem);
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Hospedagem registrada com sucesso.";
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("", erro!);
             }
             CarregarListas();
             return View(hospedagem);
@@ -90,25 +93,16 @@ namespace SisHospedar.Controllers
         }
 
         // PT: Check-out de fato: marca a hospedagem como finalizada e libera o
-        //     apartamento de volta para Disponivel.
-        // EN: The actual check-out: marks the stay as finalized and frees the
-        //     room back to Disponivel.
+        //     apartamento de volta para Disponivel (ver IHospedagemService).
+        // EN: The actual check-out: marks the stay as finalized and frees the room
+        //     back to Disponivel (see IHospedagemService).
         [HttpPost, ActionName("Finalizar")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FinalizarConfirmado(int id)
         {
-            var hospedagem = await _context.Hospedagens
-                .Include(h => h.Apartamento)
-                .FirstOrDefaultAsync(h => h.HospedagemId == id);
+            var resultado = await _hospedagemService.FinalizarCheckOutAsync(id);
+            if (resultado == ResultadoCheckOut.NaoEncontrada) return NotFound();
 
-            if (hospedagem == null) return NotFound();
-
-            hospedagem.Finalizada = true;
-            hospedagem.DataSaida = DateTime.Today;
-            if (hospedagem.Apartamento != null)
-                hospedagem.Apartamento.Status = StatusApartamento.Disponivel;
-
-            await _context.SaveChangesAsync();
             TempData["Sucesso"] = "Hospedagem finalizada com sucesso.";
             return RedirectToAction(nameof(Index));
         }

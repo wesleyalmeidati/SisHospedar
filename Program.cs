@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
 using SisHospedar.Models;
+using SisHospedar.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,14 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// PT: Regras de negócio extraídas dos controllers (check-in/check-out, consumo,
+//     confirmação de reserva) — ver pasta Services/.
+// EN: Business rules extracted from the controllers (check-in/check-out,
+//     consumption, booking confirmation) — see the Services/ folder.
+builder.Services.AddScoped<IHospedagemService, HospedagemService>();
+builder.Services.AddScoped<IConsumoService, ConsumoService>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
