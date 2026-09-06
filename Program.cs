@@ -114,3 +114,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// PT: A classe Program gerada pelos top-level statements é internal por padrão; esta
+//     declaração parcial a torna public para que SisHospedar.Tests possa usar
+//     WebApplicationFactory<Program> nos testes de integração.
+// EN: The Program class generated from top-level statements is internal by default;
+//     this partial declaration makes it public so SisHospedar.Tests can use
+//     WebApplicationFactory<Program> in integration tests.
+public partial class Program { }

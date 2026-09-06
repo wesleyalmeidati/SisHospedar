@@ -10,8 +10,9 @@ SisHospedar is a hotel management system (ASP.NET Core MVC, .NET 8, EF Core, SQL
 
 ```bash
 dotnet restore
-dotnet build
+dotnet build                            # builds the whole solution (SisHospedar.sln): web app + tests
 dotnet run                              # serves at https://localhost:5001 (or port shown in terminal)
+dotnet test                             # runs SisHospedar.Tests (no SQL Server needed, see below)
 
 # EF Core migrations (from repo root)
 dotnet tool install --global dotnet-ef  # one-time
@@ -19,7 +20,13 @@ dotnet ef migrations add <Name>
 dotnet ef database update
 ```
 
-There is no test project yet (see README roadmap — xUnit tests are planned but not present).
+### Tests (`SisHospedar.Tests/`)
+
+xUnit integration tests using `WebApplicationFactory<Program>` — boots the real app in-memory and swaps the SQL Server `AppDbContext` registration for EF Core's InMemory provider (`CustomWebApplicationFactory`), so `dotnet test` needs no database at all. `Program.cs`'s own seed data runs against that in-memory DB, so tests reuse the known seeded logins (`admin`/`gerente`/`recepcao`/etc., password `Senha123`) instead of re-seeding.
+
+`SisHospedar.Tests` lives as a subfolder of the main project's directory (not a sibling) — `Microsoft.NET.Sdk.Web`'s default `**/*.cs` glob would otherwise try to compile it into the web project too, so `SisHospedar.csproj` explicitly excludes it (`<Compile Remove="SisHospedar.Tests/**/*.cs" />`). `Program.cs` ends with `public partial class Program { }` so the test project can reference it — top-level-statement `Program` is `internal` by default, and that's a hard C# accessibility-domain rule that plain `InternalsVisibleTo` does not work around for generic base classes like `WebApplicationFactory<Program>`.
+
+Current coverage is authorization-focused (`AutorizacaoFuncionarioTests`): anonymous access is redirected, wrong `Cargo` gets 403, guest vs. employee identity separation holds. There's no coverage yet for the business-logic side (stock deduction, `Apartamento.Status` transitions, reservation confirmation) — extend `SisHospedar.Tests` rather than starting a second test project.
 
 ### Local setup
 
@@ -33,10 +40,10 @@ Standard ASP.NET Core MVC, no service/repository layer — controllers talk to `
 
 ### Two separate user identities, both session-based (no ASP.NET Core Identity/cookie auth)
 
-- **Funcionário (employee)** — `HomeController.Login` sets `Session["FuncionarioId"/"FuncionarioNome"/"FuncionarioCargo"]`. Employee-only controllers (e.g. `FuncionarioController`) check `Session.GetInt32("FuncionarioId")` at the top of each action (see `VerificarPermissao()` pattern) and redirect to `Home/Login` if absent. Role (`CargoFuncionario`) gates finer-grained actions — e.g. only `Administrador`/`Gerente` can manage staff.
-- **Hóspede (guest/customer)** — `ClienteController.Login`/`Registrar` sets `Session["HospedeId"/"HospedeNome"]`, independent of the employee session. Guest-facing self-service actions (`MinhaConta`, `Prorrogar`, `SolicitarEncerramento`, `Reserva/Create`) check this session key and redirect to `Cliente/Login` if absent.
+- **Funcionário (employee)** — `HomeController.Login` sets `Session["FuncionarioId"/"FuncionarioNome"/"FuncionarioCargo"]`. Employee-only controllers/actions are gated by two `ActionFilterAttribute`s in `Filters/`: `[RequerFuncionario]` (just requires an active employee session; redirects to `Home/Login` if absent) and `[RequerCargo(params CargoFuncionario[])]` (also requires the session's `Cargo` to be one of those listed; otherwise 403 — used on `FuncionarioController` for `Administrador`/`Gerente`-only staff management). Apply the attribute at the class level when every action needs it (see `HospedagemController`, `ApartamentoController`, etc.); apply it per-action when a controller mixes identities, like `ReservaController` (guest `Create` vs. employee `Index`/`Confirmar`/`Cancelar`).
+- **Hóspede (guest/customer)** — `ClienteController.Login`/`Registrar` sets `Session["HospedeId"/"HospedeNome"]`, independent of the employee session. Guest-facing self-service actions (`MinhaConta`, `Prorrogar`, `SolicitarEncerramento`, `Reserva/Create`) check this session key inline and redirect to `Cliente/Login` if absent — this side hasn't been moved to a filter yet.
 
-There's no shared `[Authorize]`/middleware-based auth — each controller repeats its own session check inline. When adding a new controller/action, follow the existing per-controller session-check pattern for whichever identity it belongs to, matching the sibling controllers rather than inventing a new mechanism.
+When adding a new employee-only controller/action, use `[RequerFuncionario]`/`[RequerCargo]` rather than reintroducing an inline session check — the whole point of the filters is that forgetting to protect a new action is no longer possible by omission the way a copy-pasted check could be forgotten (this happened for real: 5 controllers once shipped with zero session checks before the filters existed).
 
 ### Domain flow: Reserva → Hospedagem → Consumo
 

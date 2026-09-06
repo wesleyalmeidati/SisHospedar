@@ -89,6 +89,14 @@ Este projeto começou como um sistema em **ASP.NET Web Forms + ADO.NET puro** (D
 
 5. Acesse `https://localhost:5001` (ou a porta indicada no terminal).
 
+### Rodando os testes
+
+```bash
+dotnet test
+```
+
+Os testes (`SisHospedar.Tests/`) rodam contra um banco EF Core InMemory — não precisam do SQL Server nem do `appsettings.Development.json` configurado.
+
 ### Credenciais de teste
 
 Na primeira execução contra um banco vazio, o `Program.cs` popula hóspedes, apartamentos, produtos e os funcionários de teste abaixo — todos com a senha **`Senha123`** (armazenada como hash):
@@ -122,14 +130,16 @@ SisHospedar/
 ├── Controllers/     # Lógica de cada entidade (Hospede, Apartamento, Hospedagem...)
 ├── Models/          # Entidades de domínio
 ├── Data/            # AppDbContext (Entity Framework Core)
+├── Filters/         # ActionFilterAttributes de autorização (RequerFuncionario, RequerCargo)
 ├── Views/           # Telas Razor (CRUD por entidade)
 ├── wwwroot/         # Arquivos estáticos (CSS)
+├── SisHospedar.Tests/  # Testes de integração (xUnit)
 └── Program.cs       # Ponto de entrada e configuração da aplicação
 ```
 
 ## Próximos passos (roadmap)
 
-- [ ] Testes automatizados (xUnit)
+- [x] Testes automatizados (xUnit) — cobertura inicial de autorização; regras de negócio ainda pendentes
 - [ ] Migração de autenticação para ASP.NET Core Identity completo
 - [ ] Deploy em nuvem (Azure App Service)
 - [ ] API REST para consumo externo

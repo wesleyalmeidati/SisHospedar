@@ -16,4 +16,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- PT: SisHospedar.Tests é uma subpasta deste diretório; sem isso, o glob padrão do
+         Sdk.Web (**/*.cs) tentaria compilar os arquivos de teste dentro deste projeto também.
+         EN: SisHospedar.Tests is a subfolder of this directory; without this, the Sdk.Web
+         default glob (**/*.cs) would try to compile the test files into this project too. -->
+    <Compile Remove="SisHospedar.Tests/**/*.cs" />
+    <Content Remove="SisHospedar.Tests/**/*" />
+    <None Remove="SisHospedar.Tests/**/*" />
+  </ItemGroup>
+
 </Project>
