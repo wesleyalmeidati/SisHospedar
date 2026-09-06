@@ -139,7 +139,7 @@ SisHospedar/
 
 ## Próximos passos (roadmap)
 
-- [x] Testes automatizados (xUnit) — cobertura inicial de autorização; regras de negócio ainda pendentes
+- [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento e confirmação de reserva
 - [ ] Migração de autenticação para ASP.NET Core Identity completo
 - [ ] Deploy em nuvem (Azure App Service)
 - [ ] API REST para consumo externo

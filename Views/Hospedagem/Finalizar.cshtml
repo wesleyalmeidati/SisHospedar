@@ -7,8 +7,7 @@
     <dt class="col-sm-3">Total de Consumo</dt><dd class="col-sm-9">@Model.TotalConsumo.ToString("C")</dd>
 </dl>
 <div class="alert alert-info">Ao confirmar, a data de saída será registrada como hoje e o apartamento voltará a ficar disponível.</div>
-<form asp-action="Finalizar" method="post">
-    <input type="hidden" asp-for="HospedagemId" />
+<form asp-action="Finalizar" asp-route-id="@Model.HospedagemId" method="post">
     <button type="submit" class="btn btn-warning">Confirmar Finalização</button>
     <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
 </form>

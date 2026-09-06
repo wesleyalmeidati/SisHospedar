@@ -1,6 +1,4 @@
 using System.Net;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace SisHospedar.Tests;
 
@@ -10,41 +8,9 @@ namespace SisHospedar.Tests;
 // EN: Integration tests validating employee-route protection — the same scenarios
 //     manually verified with curl right after refactoring the authorization filters
 //     (RequerFuncionarioAttribute / RequerCargoAttribute), now automated.
-public class AutorizacaoFuncionarioTests : IClassFixture<CustomWebApplicationFactory>
+public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
 {
-    private readonly CustomWebApplicationFactory _factory;
-
-    public AutorizacaoFuncionarioTests(CustomWebApplicationFactory factory) => _factory = factory;
-
-    private HttpClient CriarCliente() =>
-        _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-    private static async Task<string> ExtrairAntiforgeryTokenAsync(HttpResponseMessage resposta)
-    {
-        var html = await resposta.Content.ReadAsStringAsync();
-        var match = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
-        return match.Groups[1].Value;
-    }
-
-    // PT: Reproduz o fluxo real de login via HTTP (GET pega o token/cookie de
-    //     antiforgery, POST envia as credenciais) — igual ao que foi validado com curl.
-    // EN: Reproduces the real HTTP login flow (GET grabs the antiforgery token/cookie,
-    //     POST sends the credentials) — same as what was validated with curl.
-    private async Task LoginComoAsync(HttpClient client, string login, string senha)
-    {
-        var paginaLogin = await client.GetAsync("/Home/Login");
-        var token = await ExtrairAntiforgeryTokenAsync(paginaLogin);
-
-        var form = new Dictionary<string, string>
-        {
-            ["login"] = login,
-            ["senha"] = senha,
-            ["__RequestVerificationToken"] = token
-        };
-
-        var resposta = await client.PostAsync("/Home/Login", new FormUrlEncodedContent(form));
-        Assert.Equal(HttpStatusCode.Redirect, resposta.StatusCode);
-    }
+    public AutorizacaoFuncionarioTests(CustomWebApplicationFactory factory) : base(factory) { }
 
     [Theory]
     [InlineData("/Hospedagem")]
@@ -96,16 +62,8 @@ public class AutorizacaoFuncionarioTests : IClassFixture<CustomWebApplicationFac
     {
         var client = CriarCliente();
 
-        var paginaLogin = await client.GetAsync("/Home/Login");
-        var token = await ExtrairAntiforgeryTokenAsync(paginaLogin);
-
-        var resposta = await client.PostAsync("/Home/Login", new FormUrlEncodedContent(
-            new Dictionary<string, string>
-            {
-                ["login"] = "admin",
-                ["senha"] = "senha-errada",
-                ["__RequestVerificationToken"] = token
-            }));
+        var resposta = await PostComAntiforgeryAsync(client, "/Home/Login", "/Home/Login",
+            new Dictionary<string, string> { ["login"] = "admin", ["senha"] = "senha-errada" });
 
         // PT: Login inválido apenas re-renderiza a view (200), não redireciona.
         // EN: Invalid login just re-renders the view (200), it doesn't redirect.
