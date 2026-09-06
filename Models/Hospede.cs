@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SisHospedar.Models
 {
+    // PT: Representa um hóspede do hotel. Pode ser cadastrado pela recepção (sem login)
+    //     ou criar sua própria conta pelo portal do cliente (com Login/SenhaHash).
+    // EN: Represents a hotel guest. Can be registered by reception (no login) or
+    //     create their own account through the guest portal (with Login/SenhaHash).
     public class Hospede
     {
         public int HospedeId { get; set; }

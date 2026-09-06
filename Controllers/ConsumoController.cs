@@ -6,6 +6,10 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Lança consumo de produtos durante uma hospedagem ativa, com baixa
+    //     atômica no estoque.
+    // EN: Records product consumption during an active stay, with an atomic
+    //     stock deduction.
     public class ConsumoController : Controller
     {
         private readonly AppDbContext _context;
@@ -29,6 +33,10 @@ namespace SisHospedar.Controllers
             return View();
         }
 
+        // PT: Valida hospedagem ativa e produto existente, copia o preço atual para
+        //     ValorUnitario (histórico) e decrementa o estoque de forma atômica.
+        // EN: Validates the stay is active and the product exists, copies the current
+        //     price into ValorUnitario (price history), and atomically deducts stock.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedagemId,ProdutoId,Quantidade")] Consumo consumo)
@@ -52,8 +60,10 @@ namespace SisHospedar.Controllers
             {
                 consumo.ValorUnitario = produto.Preco;
 
-                // Decremento atômico no banco (WHERE Estoque >= Quantidade) para evitar
-                // que duas requisições concorrentes deixem o estoque negativo (TOCTOU).
+                // PT: Decremento atômico no banco (WHERE Estoque >= Quantidade) para evitar
+                //     que duas requisições concorrentes deixem o estoque negativo (TOCTOU).
+                // EN: Atomic DB decrement (WHERE Estoque >= Quantidade) to prevent two
+                //     concurrent requests from pushing stock negative (TOCTOU race).
                 var linhasAfetadas = await _context.Produtos
                     .Where(p => p.ProdutoId == consumo.ProdutoId && p.Estoque >= consumo.Quantidade)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.Estoque, p => p.Estoque - consumo.Quantidade));

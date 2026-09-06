@@ -6,6 +6,8 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Página pública do hotel e login de funcionário (identidade separada do hóspede).
+    // EN: The hotel's public landing page and employee login (identity separate from guests).
     public class HomeController : Controller
     {
         private readonly AppDbContext _context;
@@ -26,6 +28,10 @@ namespace SisHospedar.Controllers
 
         public IActionResult Login() => View();
 
+        // PT: Verifica a senha com PasswordHasher (nunca compara texto puro) e, se válida,
+        //     abre a sessão de funcionário (Session["FuncionarioId"/"Nome"/"Cargo"]).
+        // EN: Verifies the password with PasswordHasher (never plain-text comparison) and,
+        //     if valid, opens the employee session (Session["FuncionarioId"/"Nome"/"Cargo"]).
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string login, string senha)

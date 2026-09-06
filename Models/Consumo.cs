@@ -3,6 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SisHospedar.Models
 {
+    // PT: Um item de produto consumido durante uma Hospedagem. ValorUnitario é
+    //     copiado do Produto no momento do lançamento (histórico de preço).
+    // EN: A product item consumed during a Hospedagem (stay). ValorUnitario is
+    //     copied from Produto at the time it's recorded (price history).
     public class Consumo
     {
         public int ConsumoId { get; set; }

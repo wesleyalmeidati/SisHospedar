@@ -5,9 +5,12 @@ using SisHospedar.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// A string de conexão vem do appsettings.json (ambiente local) ou de
-// variável de ambiente / User Secrets — NUNCA fica escrita direto no código,
-// diferente da versão original do projeto (ConexaoBanco.cs).
+// PT: A string de conexão vem do appsettings.json (ambiente local) ou de
+//     variável de ambiente / User Secrets — NUNCA fica escrita direto no código,
+//     diferente da versão original do projeto (ConexaoBanco.cs).
+// EN: The connection string comes from appsettings.json (local environment) or
+//     from an environment variable / User Secrets — it's NEVER hardcoded in
+//     source, unlike the original project's ConexaoBanco.cs.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
 
@@ -25,8 +28,10 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-// Popula o banco com dados de teste na primeira vez que rodar
-// (só insere se as tabelas estiverem vazias — não duplica em execuções seguintes).
+// PT: Popula o banco com dados de teste na primeira vez que rodar
+//     (só insere se as tabelas estiverem vazias — não duplica em execuções seguintes).
+// EN: Seeds the database with sample data on first run
+//     (only inserts if the tables are empty — won't duplicate on later runs).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -66,8 +71,10 @@ using (var scope = app.Services.CreateScope())
         );
     }
 
-    // Funcionários de teste — login e senha para você testar cada painel.
-    // SENHA PARA TODOS: Senha123
+    // PT: Funcionários de teste — login e senha para você testar cada painel.
+    //     SENHA PARA TODOS: Senha123
+    // EN: Test employees — login and password to try out each dashboard.
+    //     PASSWORD FOR ALL: Senha123
     if (!db.Funcionarios.Any())
     {
         var hasher = new PasswordHasher<Funcionario>();

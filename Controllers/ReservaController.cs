@@ -6,6 +6,10 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Controller com duas metades: hóspede cria o pedido de reserva; recepção
+    //     confirma (o que gera o check-in) ou cancela.
+    // EN: A controller with two halves: the guest creates the booking request;
+    //     reception confirms it (which triggers check-in) or cancels it.
     public class ReservaController : Controller
     {
         private readonly AppDbContext _context;
@@ -24,6 +28,10 @@ namespace SisHospedar.Controllers
             return View();
         }
 
+        // PT: Cria a reserva como Pendente. Revalida no servidor se o apartamento
+        //     ainda está Disponivel (o dropdown pode estar desatualizado).
+        // EN: Creates the booking as Pendente. Re-validates server-side that the
+        //     room is still Disponivel (the dropdown may be stale).
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ApartamentoId,DataEntrada,DataSaidaPrevista")] Reserva reserva)
@@ -78,6 +86,10 @@ namespace SisHospedar.Controllers
             return View(reservas);
         }
 
+        // PT: Ponto de check-in: confirmar a reserva cria a Hospedagem de verdade e
+        //     ocupa o apartamento. Falha graciosamente se o quarto não estiver mais livre.
+        // EN: The check-in point: confirming the booking creates the actual Hospedagem
+        //     and occupies the room. Fails gracefully if the room is no longer free.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirmar(int id)
@@ -98,7 +110,8 @@ namespace SisHospedar.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Confirmar a reserva = fazer o check-in (cria a Hospedagem de verdade)
+            // PT: Confirmar a reserva = fazer o check-in (cria a Hospedagem de verdade).
+            // EN: Confirming the booking = performing check-in (creates the actual Hospedagem).
             var hospedagem = new Hospedagem
             {
                 HospedeId = reserva.HospedeId,

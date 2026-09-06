@@ -9,8 +9,10 @@ namespace SisHospedar.Models
         Cancelada
     }
 
-    // Uma Reserva é o pedido do cliente feito pelo site (antes de chegar ao hotel).
-    // Quando a recepção confirma, uma Hospedagem de verdade é criada (check-in).
+    // PT: Pedido de reserva feito pelo hóspede pelo site (antes de chegar ao hotel).
+    //     Quando a recepção confirma, uma Hospedagem de verdade é criada (check-in).
+    // EN: A booking request made by the guest through the website (before arriving
+    //     at the hotel). When reception confirms it, an actual Hospedagem (stay) is created.
     public class Reserva
     {
         public int ReservaId { get; set; }

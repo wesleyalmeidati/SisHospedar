@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SisHospedar.Models
 {
+    // PT: Fonte única de verdade sobre a disponibilidade de um apartamento para
+    //     reserva/hospedagem — não existe cálculo de disponibilidade separado.
+    // EN: Single source of truth for a room's booking eligibility — there's no
+    //     separate availability-calculation logic elsewhere.
     public enum StatusApartamento
     {
         Disponivel,
@@ -9,6 +13,8 @@ namespace SisHospedar.Models
         Manutencao
     }
 
+    // PT: Representa um quarto/apartamento do hotel.
+    // EN: Represents a hotel room/apartment.
     public class Apartamento
     {
         public int ApartamentoId { get; set; }

@@ -6,6 +6,10 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Gerencia o check-in (Create), consulta e o check-out (Finalizar) das
+    //     estadias. Mantém Apartamento.Status sincronizado a cada transição.
+    // EN: Manages check-in (Create), lookup, and check-out (Finalizar) of stays.
+    //     Keeps Apartamento.Status in sync at every transition.
     public class HospedagemController : Controller
     {
         private readonly AppDbContext _context;
@@ -56,6 +60,10 @@ namespace SisHospedar.Controllers
             return View();
         }
 
+        // PT: Check-in feito diretamente pela recepção (sem Reserva prévia). Revalida
+        //     no servidor se o apartamento ainda está Disponivel antes de ocupá-lo.
+        // EN: Check-in performed directly by reception (no prior Reserva). Re-validates
+        //     server-side that the room is still Disponivel before occupying it.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedeId,ApartamentoId,DataEntrada")] Hospedagem hospedagem)
@@ -83,7 +91,10 @@ namespace SisHospedar.Controllers
             return View(hospedagem);
         }
 
-        // Equivalente moderno da tela WFFinalizarHospedagem.aspx do projeto original.
+        // PT: Equivalente moderno da tela WFFinalizarHospedagem.aspx do projeto original —
+        //     tela de conferência antes do check-out (FinalizarConfirmado faz a baixa).
+        // EN: Modern equivalent of the original project's WFFinalizarHospedagem.aspx —
+        //     the review screen before check-out (FinalizarConfirmado does the actual work).
         public async Task<IActionResult> Finalizar(int? id)
         {
             var bloqueio = VerificarSessao();
@@ -99,6 +110,10 @@ namespace SisHospedar.Controllers
             return View(hospedagem);
         }
 
+        // PT: Check-out de fato: marca a hospedagem como finalizada e libera o
+        //     apartamento de volta para Disponivel.
+        // EN: The actual check-out: marks the stay as finalized and frees the
+        //     room back to Disponivel.
         [HttpPost, ActionName("Finalizar")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FinalizarConfirmado(int id)

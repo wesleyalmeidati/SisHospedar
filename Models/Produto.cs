@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SisHospedar.Models
 {
+    // PT: Item vendável durante a estadia (frigobar, serviço, etc). O estoque é
+    //     decrementado quando um Consumo é lançado (ver ConsumoController).
+    // EN: Sellable item during a stay (minibar, service, etc). Stock is
+    //     decremented whenever a Consumo is recorded (see ConsumoController).
     public class Produto
     {
         public int ProdutoId { get; set; }

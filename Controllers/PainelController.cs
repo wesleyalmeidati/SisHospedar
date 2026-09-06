@@ -5,6 +5,10 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Painel inicial do funcionário após o login — o conteúdo exibido muda
+    //     conforme o Cargo (ver switch abaixo).
+    // EN: The employee's landing dashboard after login — the content shown
+    //     changes based on their Cargo (role, see switch below).
     public class PainelController : Controller
     {
         private readonly AppDbContext _context;

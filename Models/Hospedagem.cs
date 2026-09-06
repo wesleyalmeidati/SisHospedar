@@ -3,6 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SisHospedar.Models
 {
+    // PT: Representa uma estadia real (check-in feito) de um Hospede em um Apartamento.
+    //     Criada ao confirmar uma Reserva ou diretamente no balcão pela recepção.
+    // EN: Represents an actual stay (checked in) of a Hospede in an Apartamento.
+    //     Created when a Reserva is confirmed, or directly at the front desk.
     public class Hospedagem
     {
         public int HospedagemId { get; set; }
