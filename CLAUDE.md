@@ -28,6 +28,10 @@ xUnit integration tests using `WebApplicationFactory<Program>` — boots the rea
 
 Coverage: `AutorizacaoFuncionarioTests` (anonymous access redirects, wrong `Cargo` gets 403, guest vs. employee identity separation) and business-logic tests — `ConsumoTests` (stock deduction, insufficient-stock rejection, rejecting consumption on a finalized stay), `HospedagemStatusTests` (check-in occupies the room, check-out frees it), `ReservaConfirmarTests` (confirming a booking creates the `Hospedagem` and occupies the room, or fails gracefully if the room is no longer free). Shared HTTP/login/antiforgery helpers live in `TestesIntegracaoBase`. Writing `HospedagemStatusTests.FinalizarConfirmado_LiberaApartamento` caught a real, pre-existing bug: `Views/Hospedagem/Finalizar.cshtml`'s form posted a `HospedagemId` field while the action expected a route parameter named `id` (no `asp-route-id`), so the "Confirmar Finalização" button always 404'd in the real app — fixed by adding `asp-route-id="@Model.HospedagemId"` to the form.
 
+### CI (`.github/workflows/ci.yml`)
+
+Runs on every push/PR to `main`: restore, build (Release), `dotnet test`, then `dotnet ef migrations has-pending-model-changes` — the last step is what would have caught the `InitialCreate`-vs-model drift found earlier in this project (missing `Hospede.Login`/`Reservas`/etc.) before it ever reached a clone. None of this needs a real SQL Server: the workflow sets `ConnectionStrings__DefaultConnection` to a dummy value purely to satisfy `Program.cs`'s startup guard clause — tests run against in-memory SQLite, and the pending-migrations check only compares the in-code model against the last migration's snapshot, no live connection required.
+
 ### Local setup
 
 `appsettings.Development.json` is gitignored (contains the real DB password). Copy `appsettings.Development.json.example` to `appsettings.Development.json` and fill in a real SQL Server connection string before running. `Program.cs` throws on startup if `ConnectionStrings:DefaultConnection` is missing.

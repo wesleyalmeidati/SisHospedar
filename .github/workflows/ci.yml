@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# PT: Nenhum step aqui toca um SQL Server de verdade — os testes usam SQLite em memória
+#     (ver SisHospedar.Tests/CustomWebApplicationFactory.cs) e a checagem de migrations
+#     só compara o modelo em código com o snapshot, sem precisar de conexão real. Essa
+#     connection string "fake" existe só pra passar o guard clause do Program.cs.
+# EN: No step here touches a real SQL Server — tests use in-memory SQLite (see
+#     SisHospedar.Tests/CustomWebApplicationFactory.cs) and the migrations check only
+#     compares the in-code model against the snapshot, no real connection needed. This
+#     "fake" connection string only exists to satisfy Program.cs's guard clause.
+env:
+  ConnectionStrings__DefaultConnection: "Server=fake;Database=fake;Trusted_Connection=True;"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      # PT: Pega exatamente o tipo de bug que passou despercebido antes neste projeto —
+      #     um Model alterado sem a migration correspondente, que só quebraria o banco de
+      #     quem clonasse o repo do zero.
+      # EN: Catches exactly the kind of bug that slipped through unnoticed in this project
+      #     before — a changed model with no matching migration, which would only break
+      #     the database for someone cloning the repo from scratch.
+      - name: Check for pending EF Core model changes without a migration
+        run: |
+          dotnet tool install --global dotnet-ef --version 8.0.8
+          dotnet ef migrations has-pending-model-changes --project SisHospedar.csproj
