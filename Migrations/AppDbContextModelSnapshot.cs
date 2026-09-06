@@ -91,6 +91,9 @@ namespace SisHospedar.Migrations
                     b.Property<int>("Cargo")
                         .HasColumnType("int");
 
+                    b.Property<int?>("HospedeId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -106,6 +109,8 @@ namespace SisHospedar.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("FuncionarioId");
+
+                    b.HasIndex("HospedeId");
 
                     b.HasIndex("Login")
                         .IsUnique();
@@ -136,6 +141,9 @@ namespace SisHospedar.Migrations
                     b.Property<int>("HospedeId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("SolicitouEncerramento")
+                        .HasColumnType("bit");
+
                     b.HasKey("HospedagemId");
 
                     b.HasIndex("ApartamentoId");
@@ -161,10 +169,21 @@ namespace SisHospedar.Migrations
                     b.Property<DateTime>("DataNascimento")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Login")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SenhaHash")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Telefone")
                         .HasMaxLength(20)
@@ -174,6 +193,10 @@ namespace SisHospedar.Migrations
 
                     b.HasIndex("Cpf")
                         .IsUnique();
+
+                    b.HasIndex("Login")
+                        .IsUnique()
+                        .HasFilter("[Login] IS NOT NULL");
 
                     b.ToTable("Hospedes");
                 });
@@ -202,6 +225,41 @@ namespace SisHospedar.Migrations
                     b.ToTable("Produtos");
                 });
 
+            modelBuilder.Entity("SisHospedar.Models.Reserva", b =>
+                {
+                    b.Property<int>("ReservaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReservaId"));
+
+                    b.Property<int>("ApartamentoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataEntrada")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataSaidaPrevista")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("HospedeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReservaId");
+
+                    b.HasIndex("ApartamentoId");
+
+                    b.HasIndex("HospedeId");
+
+                    b.ToTable("Reservas");
+                });
+
             modelBuilder.Entity("SisHospedar.Models.Consumo", b =>
                 {
                     b.HasOne("SisHospedar.Models.Hospedagem", "Hospedagem")
@@ -221,6 +279,16 @@ namespace SisHospedar.Migrations
                     b.Navigation("Produto");
                 });
 
+            modelBuilder.Entity("SisHospedar.Models.Funcionario", b =>
+                {
+                    b.HasOne("SisHospedar.Models.Hospede", "Hospede")
+                        .WithMany()
+                        .HasForeignKey("HospedeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Hospede");
+                });
+
             modelBuilder.Entity("SisHospedar.Models.Hospedagem", b =>
                 {
                     b.HasOne("SisHospedar.Models.Apartamento", "Apartamento")
@@ -231,6 +299,25 @@ namespace SisHospedar.Migrations
 
                     b.HasOne("SisHospedar.Models.Hospede", "Hospede")
                         .WithMany("Hospedagens")
+                        .HasForeignKey("HospedeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Apartamento");
+
+                    b.Navigation("Hospede");
+                });
+
+            modelBuilder.Entity("SisHospedar.Models.Reserva", b =>
+                {
+                    b.HasOne("SisHospedar.Models.Apartamento", "Apartamento")
+                        .WithMany()
+                        .HasForeignKey("ApartamentoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SisHospedar.Models.Hospede", "Hospede")
+                        .WithMany("Reservas")
                         .HasForeignKey("HospedeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -253,6 +340,8 @@ namespace SisHospedar.Migrations
             modelBuilder.Entity("SisHospedar.Models.Hospede", b =>
                 {
                     b.Navigation("Hospedagens");
+
+                    b.Navigation("Reservas");
                 });
 
             modelBuilder.Entity("SisHospedar.Models.Produto", b =>

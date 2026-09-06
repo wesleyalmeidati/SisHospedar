@@ -6,6 +6,10 @@ using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Portal de autoatendimento do hóspede — login/sessão próprios
+    //     (Session["HospedeId"/"HospedeNome"]), independentes da sessão de funcionário.
+    // EN: Guest self-service portal — its own login/session
+    //     (Session["HospedeId"/"HospedeNome"]), independent from the employee session.
     public class ClienteController : Controller
     {
         private readonly AppDbContext _context;
@@ -15,6 +19,10 @@ namespace SisHospedar.Controllers
 
         public IActionResult Registrar() => View();
 
+        // PT: Cria a conta do hóspede (senha em hash) e já abre a sessão dele,
+        //     encaminhando direto para criar a primeira reserva.
+        // EN: Creates the guest account (hashed password) and immediately opens
+        //     their session, sending them straight to create their first booking.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Registrar(Hospede hospede, string senha)
@@ -25,6 +33,13 @@ namespace SisHospedar.Controllers
                 ModelState.AddModelError("senha", "A senha deve ter ao menos 6 caracteres.");
 
             if (await _context.Hospedes.AnyAsync(h => h.Login == hospede.Login))
+                ModelState.AddModelError("Login", "Este login já está em uso.");
+
+            // PT: Login também não pode colidir com o de um funcionário — as duas
+            //     identidades são independentes, mas compartilham o mesmo "namespace" de login.
+            // EN: Login also can't collide with an employee's — the two identities are
+            //     independent, but share the same login "namespace".
+            if (await _context.Funcionarios.AnyAsync(f => f.Login == hospede.Login))
                 ModelState.AddModelError("Login", "Este login já está em uso.");
 
             if (await _context.Hospedes.AnyAsync(h => h.Cpf == hospede.Cpf))
@@ -72,6 +87,10 @@ namespace SisHospedar.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        // PT: Área do hóspede — mostra a hospedagem ativa (com consumo) e as reservas
+        //     pendentes de confirmação pela recepção.
+        // EN: The guest's account area — shows the active stay (with consumption) and
+        //     any bookings still pending reception's confirmation.
         public async Task<IActionResult> MinhaConta()
         {
             var hospedeId = HttpContext.Session.GetInt32("HospedeId");
@@ -92,6 +111,10 @@ namespace SisHospedar.Controllers
             return View(hospedagemAtiva);
         }
 
+        // PT: Permite ao hóspede estender a própria estadia, desde que ela pertença
+        //     a ele, ainda esteja ativa e a nova data seja depois da entrada.
+        // EN: Lets the guest extend their own stay, provided it belongs to them,
+        //     is still active, and the new date is after check-in.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Prorrogar(int hospedagemId, DateTime novaDataSaida)
@@ -111,6 +134,10 @@ namespace SisHospedar.Controllers
             return RedirectToAction(nameof(MinhaConta));
         }
 
+        // PT: O hóspede só sinaliza o pedido (SolicitouEncerramento = true); quem de
+        //     fato finaliza a hospedagem é a recepção, em HospedagemController.
+        // EN: The guest only flags the request (SolicitouEncerramento = true); reception
+        //     is the one who actually finalizes the stay, in HospedagemController.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SolicitarEncerramento(int hospedagemId)

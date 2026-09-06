@@ -10,6 +10,13 @@
     </div>
     <div class="mb-3"><label asp-for="Login" class="form-label"></label><input asp-for="Login" class="form-control" /></div>
     <div class="mb-3"><label class="form-label">Senha</label><input name="senha" type="password" class="form-control" /></div>
+    <div class="mb-3">
+        <label asp-for="HospedeId" class="form-label"></label>
+        <select asp-for="HospedeId" class="form-select" asp-items="ViewBag.HospedeId">
+            <option value="">-- Nenhum (não é hóspede) --</option>
+        </select>
+        <div class="form-text">Preencha apenas se este funcionário também possuir cadastro de hóspede.</div>
+    </div>
     <button type="submit" class="btn btn-primary">Salvar</button>
     <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
 </form>
