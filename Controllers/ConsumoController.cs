@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
@@ -10,24 +11,14 @@ namespace SisHospedar.Controllers
     //     atômica no estoque.
     // EN: Records product consumption during an active stay, with an atomic
     //     stock deduction.
+    [RequerFuncionario]
     public class ConsumoController : Controller
     {
         private readonly AppDbContext _context;
         public ConsumoController(AppDbContext context) => _context = context;
 
-        // Só funcionários logados podem lançar consumo em uma hospedagem.
-        private IActionResult? VerificarSessao()
-        {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-            return null;
-        }
-
         public IActionResult Create(int hospedagemId)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             ViewData["HospedagemId"] = hospedagemId;
             ViewData["ProdutoId"] = new SelectList(_context.Produtos.OrderBy(p => p.Nome), "ProdutoId", "Nome");
             return View();
@@ -41,9 +32,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedagemId,ProdutoId,Quantidade")] Consumo consumo)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var hospedagem = await _context.Hospedagens.FindAsync(consumo.HospedagemId);
             if (hospedagem == null || hospedagem.Finalizada)
             {

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
@@ -9,6 +10,7 @@ namespace SisHospedar.Controllers
     //     conforme o Cargo (ver switch abaixo).
     // EN: The employee's landing dashboard after login — the content shown
     //     changes based on their Cargo (role, see switch below).
+    [RequerFuncionario]
     public class PainelController : Controller
     {
         private readonly AppDbContext _context;
@@ -17,8 +19,6 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> Index()
         {
             var funcionarioId = HttpContext.Session.GetInt32("FuncionarioId");
-            if (funcionarioId == null) return RedirectToAction("Login", "Home");
-
             var funcionario = await _context.Funcionarios.FindAsync(funcionarioId);
             if (funcionario == null) return RedirectToAction("Login", "Home");
 

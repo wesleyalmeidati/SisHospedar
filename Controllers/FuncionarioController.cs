@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
-    // PT: Gerencia a equipe do hotel. Restrito a Administrador/Gerente
-    //     (ver VerificarPermissao abaixo).
-    // EN: Manages hotel staff. Restricted to Administrador/Gerente roles
-    //     (see VerificarPermissao below).
+    // PT: Gerencia a equipe do hotel. Restrito a Administrador/Gerente.
+    // EN: Manages hotel staff. Restricted to Administrador/Gerente roles.
+    [RequerCargo(CargoFuncionario.Administrador, CargoFuncionario.Gerente)]
     public class FuncionarioController : Controller
     {
         private readonly AppDbContext _context;
@@ -18,35 +18,13 @@ namespace SisHospedar.Controllers
 
         public FuncionarioController(AppDbContext context) => _context = context;
 
-        // PT: Só Administrador e Gerente podem gerenciar a equipe. Sem login de
-        //     funcionário -> manda pro login. Logado mas sem permissão -> nega (403).
-        // EN: Only Administrador and Gerente can manage staff. No employee session
-        //     -> redirects to login. Logged in but wrong role -> denies (403).
-        private IActionResult? VerificarPermissao()
-        {
-            var funcionarioId = HttpContext.Session.GetInt32("FuncionarioId");
-            if (funcionarioId == null) return RedirectToAction("Login", "Home");
-
-            var cargo = HttpContext.Session.GetString("FuncionarioCargo");
-            if (cargo != CargoFuncionario.Administrador.ToString() && cargo != CargoFuncionario.Gerente.ToString())
-                return StatusCode(403, "Acesso negado: apenas Administrador ou Gerente podem gerenciar funcionários.");
-
-            return null; // null = permissão concedida, segue em frente
-        }
-
         public async Task<IActionResult> Index()
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
-
             return View(await _context.Funcionarios.OrderBy(f => f.Nome).ToListAsync());
         }
 
         public async Task<IActionResult> Details(int? id)
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var funcionario = await _context.Funcionarios
                 .Include(f => f.Hospede)
@@ -57,8 +35,6 @@ namespace SisHospedar.Controllers
 
         public IActionResult Create()
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
             CarregarListaHospedes();
             return View();
         }
@@ -75,9 +51,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Nome,Cargo,Login,HospedeId")] Funcionario funcionario, string senha)
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
-
             ModelState.Remove(nameof(Funcionario.SenhaHash));
             if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6)
                 ModelState.AddModelError("senha", "A senha deve ter ao menos 6 caracteres.");
@@ -99,9 +72,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Delete(int? id)
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var funcionario = await _context.Funcionarios.FirstOrDefaultAsync(f => f.FuncionarioId == id);
             if (funcionario == null) return NotFound();
@@ -112,9 +82,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var bloqueio = VerificarPermissao();
-            if (bloqueio != null) return bloqueio;
-
             var funcionario = await _context.Funcionarios.FindAsync(id);
             if (funcionario != null)
             {

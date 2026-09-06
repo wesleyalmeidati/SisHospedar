@@ -1,30 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Só funcionários logados podem ver/gerenciar hóspedes (dados pessoais: CPF, telefone...).
+    // EN: Only logged-in employees can view/manage guests (personal data: CPF, phone...).
+    [RequerFuncionario]
     public class HospedeController : Controller
     {
         private readonly AppDbContext _context;
 
         public HospedeController(AppDbContext context) => _context = context;
 
-        // Só funcionários logados podem ver/gerenciar hóspedes (dados pessoais: CPF, telefone...).
-        private IActionResult? VerificarSessao()
-        {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-            return null;
-        }
-
         // GET: /Hospede?busca=texto
         public async Task<IActionResult> Index(string? busca)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var query = _context.Hospedes.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(busca))
@@ -38,29 +31,18 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Details(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var hospede = await _context.Hospedes.FirstOrDefaultAsync(h => h.HospedeId == id);
             if (hospede == null) return NotFound();
             return View(hospede);
         }
 
-        public IActionResult Create()
-        {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-            return View();
-        }
+        public IActionResult Create() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Nome,Cpf,Telefone,DataNascimento")] Hospede hospede)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (ModelState.IsValid)
             {
                 _context.Add(hospede);
@@ -73,9 +55,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Edit(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var hospede = await _context.Hospedes.FindAsync(id);
             if (hospede == null) return NotFound();
@@ -86,9 +65,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("HospedeId,Nome,Cpf,Telefone,DataNascimento")] Hospede hospede)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id != hospede.HospedeId) return NotFound();
 
             if (ModelState.IsValid)
@@ -111,9 +87,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Delete(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var hospede = await _context.Hospedes.FirstOrDefaultAsync(h => h.HospedeId == id);
             if (hospede == null) return NotFound();
@@ -124,9 +97,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var hospede = await _context.Hospedes.FindAsync(id);
             if (hospede != null)
             {

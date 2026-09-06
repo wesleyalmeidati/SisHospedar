@@ -2,14 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
     // PT: Controller com duas metades: hóspede cria o pedido de reserva; recepção
-    //     confirma (o que gera o check-in) ou cancela.
+    //     confirma (o que gera o check-in) ou cancela. Por isso o filtro de sessão de
+    //     funcionário é aplicado por método (Index/Confirmar/Cancelar), não na classe.
     // EN: A controller with two halves: the guest creates the booking request;
-    //     reception confirms it (which triggers check-in) or cancels it.
+    //     reception confirms it (which triggers check-in) or cancels it. That's why the
+    //     employee session filter is applied per-method (Index/Confirmar/Cancelar), not on the class.
     public class ReservaController : Controller
     {
         private readonly AppDbContext _context;
@@ -71,11 +74,9 @@ namespace SisHospedar.Controllers
         }
 
         // ---- Área do FUNCIONÁRIO (recepção): confirmar/cancelar reservas ----
+        [RequerFuncionario]
         public async Task<IActionResult> Index()
         {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-
             var reservas = await _context.Reservas
                 .Include(r => r.Hospede)
                 .Include(r => r.Apartamento)
@@ -90,13 +91,11 @@ namespace SisHospedar.Controllers
         //     ocupa o apartamento. Falha graciosamente se o quarto não estiver mais livre.
         // EN: The check-in point: confirming the booking creates the actual Hospedagem
         //     and occupies the room. Fails gracefully if the room is no longer free.
+        [RequerFuncionario]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirmar(int id)
         {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-
             var reserva = await _context.Reservas
                 .Include(r => r.Apartamento)
                 .FirstOrDefaultAsync(r => r.ReservaId == id);
@@ -130,13 +129,11 @@ namespace SisHospedar.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [RequerFuncionario]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancelar(int id)
         {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-
             var reserva = await _context.Reservas.FindAsync(id);
             if (reserva != null && reserva.Status == StatusReserva.Pendente)
             {

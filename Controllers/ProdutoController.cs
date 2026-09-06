@@ -1,55 +1,36 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
+    // PT: Só funcionários logados podem gerenciar produtos (preço, estoque).
+    // EN: Only logged-in employees can manage products (price, stock).
+    [RequerFuncionario]
     public class ProdutoController : Controller
     {
         private readonly AppDbContext _context;
         public ProdutoController(AppDbContext context) => _context = context;
 
-        // Só funcionários logados podem gerenciar produtos (preço, estoque).
-        private IActionResult? VerificarSessao()
-        {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-            return null;
-        }
-
-        public async Task<IActionResult> Index()
-        {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-            return View(await _context.Produtos.OrderBy(p => p.Nome).ToListAsync());
-        }
+        public async Task<IActionResult> Index() =>
+            View(await _context.Produtos.OrderBy(p => p.Nome).ToListAsync());
 
         public async Task<IActionResult> Details(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var produto = await _context.Produtos.FirstOrDefaultAsync(p => p.ProdutoId == id);
             if (produto == null) return NotFound();
             return View(produto);
         }
 
-        public IActionResult Create()
-        {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-            return View();
-        }
+        public IActionResult Create() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Nome,Preco,Estoque")] Produto produto)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (ModelState.IsValid)
             {
                 _context.Add(produto);
@@ -62,9 +43,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Edit(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var produto = await _context.Produtos.FindAsync(id);
             if (produto == null) return NotFound();
@@ -75,9 +53,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("ProdutoId,Nome,Preco,Estoque")] Produto produto)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id != produto.ProdutoId) return NotFound();
             if (ModelState.IsValid)
             {
@@ -99,9 +74,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Delete(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var produto = await _context.Produtos.FirstOrDefaultAsync(p => p.ProdutoId == id);
             if (produto == null) return NotFound();
@@ -112,9 +84,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var produto = await _context.Produtos.FindAsync(id);
             if (produto != null)
             {

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
@@ -10,24 +11,14 @@ namespace SisHospedar.Controllers
     //     estadias. Mantém Apartamento.Status sincronizado a cada transição.
     // EN: Manages check-in (Create), lookup, and check-out (Finalizar) of stays.
     //     Keeps Apartamento.Status in sync at every transition.
+    [RequerFuncionario]
     public class HospedagemController : Controller
     {
         private readonly AppDbContext _context;
         public HospedagemController(AppDbContext context) => _context = context;
 
-        // Só funcionários logados podem gerenciar hospedagens (check-in/check-out).
-        private IActionResult? VerificarSessao()
-        {
-            if (HttpContext.Session.GetInt32("FuncionarioId") == null)
-                return RedirectToAction("Login", "Home");
-            return null;
-        }
-
         public async Task<IActionResult> Index()
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var hospedagens = await _context.Hospedagens
                 .Include(h => h.Hospede)
                 .Include(h => h.Apartamento)
@@ -38,9 +29,6 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Details(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var hospedagem = await _context.Hospedagens
                 .Include(h => h.Hospede)
@@ -53,9 +41,6 @@ namespace SisHospedar.Controllers
 
         public IActionResult Create()
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             CarregarListas();
             return View();
         }
@@ -68,9 +53,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("HospedeId,ApartamentoId,DataEntrada")] Hospedagem hospedagem)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (ModelState.IsValid)
             {
                 var apartamento = await _context.Apartamentos.FindAsync(hospedagem.ApartamentoId);
@@ -97,9 +79,6 @@ namespace SisHospedar.Controllers
         //     the review screen before check-out (FinalizarConfirmado does the actual work).
         public async Task<IActionResult> Finalizar(int? id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             if (id == null) return NotFound();
             var hospedagem = await _context.Hospedagens
                 .Include(h => h.Hospede)
@@ -118,9 +97,6 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FinalizarConfirmado(int id)
         {
-            var bloqueio = VerificarSessao();
-            if (bloqueio != null) return bloqueio;
-
             var hospedagem = await _context.Hospedagens
                 .Include(h => h.Apartamento)
                 .FirstOrDefaultAsync(h => h.HospedagemId == id);
