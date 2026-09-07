@@ -1,5 +1,7 @@
 # SisHospedar
 
+**🔗 Aplicação no ar: [sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io](https://sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io/)** — login `wesley.sales` / senha `Senha123` (ou veja a tabela completa [mais abaixo](#credenciais-de-teste))
+
 Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 8)** com **Entity Framework Core**, permitindo o controle de hóspedes, apartamentos, reservas, hospedagens, funcionários, produtos e consumo.
 
 > Este projeto é a modernização do meu Trabalho de Conclusão de Curso, originalmente desenvolvido em **ASP.NET Web Forms (.NET Framework) com ADO.NET**. Reescrevi a aplicação usando o stack atual do ecossistema .NET, corrigindo problemas de segurança do projeto original e aplicando boas práticas de arquitetura.
@@ -50,6 +52,7 @@ Permite ao hóspede:
 | Acesso a dados | Entity Framework Core (SQL Server) |
 | Frontend | Razor Views + Bootstrap 5, com design system próprio (`wwwroot/css/site.css`) |
 | Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + ASP.NET Core Identity (`UserManager`/`SignInManager`, hash, lockout, reset de senha) |
+| Deploy | Docker (`Dockerfile` multi-stage) → Docker Hub → Azure Container Apps, banco em Azure SQL Database |
 
 ## O que mudou em relação à versão original (2013)
 
@@ -116,6 +119,37 @@ Na primeira execução contra um banco vazio, o `Program.cs` popula hóspedes, a
 
 Para testar o portal do hóspede, crie uma conta nova em `/Cliente/Registrar` — os hóspedes seedados não têm login/senha (foram cadastrados como se fosse pela recepção, no balcão).
 
+## Deploy
+
+A aplicação roda em produção como **container** — mesma imagem Docker que builda localmente, sem código específico de nuvem:
+
+```
+Dockerfile (multi-stage: build com o SDK, imagem final só com o runtime)
+   → docker build / docker push → Docker Hub (wesleysales/sishospedar)
+   → Azure Container Apps (env-sishospedar, plano de consumo, dentro do tier gratuito)
+   → Azure SQL Database (sql-sishospedar-wsales-br, tier Basic)
+```
+
+Motivo de Container Apps em vez de App Service: a assinatura usada não tinha cota liberada pro tier gratuito (F1) do App Service em nenhuma das ~9 regiões testadas — comum em assinaturas novas. Container Apps usa outro pool de cota (consumo serverless, não VM reservada) e não esbarrou nessa restrição.
+
+### Redeploy (depois de alterar o código)
+
+```bash
+docker build -t wesleysales/sishospedar:latest .
+docker push wesleysales/sishospedar:latest
+
+az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:latest
+```
+
+Se uma migration nova foi criada, aplique contra o banco de produção antes do redeploy (substitua a senha pela guardada com você, nunca commitada):
+
+```bash
+ConnectionStrings__DefaultConnection="Server=tcp:sql-sishospedar-wsales-br.database.windows.net,1433;Database=SisHospedar;User ID=sqladmin;Password=<senha>;Encrypt=True;TrustServerCertificate=False;" \
+dotnet ef database update
+```
+
+(Precisa liberar seu IP no firewall do SQL Server antes: `az sql server firewall-rule create --resource-group rg-sishospedar --server sql-sishospedar-wsales-br --name AllowMyIP --start-ip-address <seu-ip> --end-ip-address <seu-ip>` — remova a regra depois com `az sql server firewall-rule delete`.)
+
 ## Fluxo de uma estadia
 
 ```
@@ -146,6 +180,7 @@ SisHospedar/
 ├── wwwroot/             # Arquivos estáticos (CSS, vídeo do hero — ver wwwroot/videos/README.md)
 ├── Migrations/          # Migrations do Entity Framework Core
 ├── SisHospedar.Tests/   # Testes de integração (xUnit + SQLite em memória)
+├── Dockerfile           # Build multi-stage usado no deploy (Container Apps)
 └── Program.cs           # Ponto de entrada, DI, autenticação e seed de dados
 ```
 
@@ -157,8 +192,9 @@ SisHospedar/
 - [x] Prevenção de reserva duplicada (conflito de datas) e status `Reservado` no apartamento
 - [x] Redesign completo da interface (design system próprio, fora do Bootstrap padrão)
 - [x] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — via uma store customizada (`EntityUserStore`, ver `CLAUDE.md`) em vez de herdar `IdentityUser<T>`, evitando a duplicação de tabelas de apoio que o caminho "óbvio" exigiria para duas identidades independentes; redefinição de senha em modo demonstração (mostra o link na tela em vez de enviar e-mail, já que o projeto não tem provedor de e-mail configurado)
+- [x] Deploy em nuvem — Docker + Docker Hub + Azure Container Apps + Azure SQL Database (ver seção [Deploy](#deploy)); link no topo deste README
 - [ ] E-mail de verdade para o link de redefinição de senha (trocar o modo demonstração por um `IEmailSender`)
-- [ ] Deploy em nuvem (Azure App Service)
+- [ ] CI/CD automatizado (build + push + `containerapp update` a cada merge em `main`, hoje é manual)
 - [ ] API REST para consumo externo
 - [ ] Pagamento — via integração com um gateway de mercado (Stripe/Mercado Pago/PagSeguro), não implementação própria; deixado como última etapa de propósito, para não acoplar o modelo de domínio a isso antes de ele estar maduro
 

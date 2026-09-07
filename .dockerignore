@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+SisHospedar.Tests/
+.git/
+.github/
+appsettings.Development.json
+*.md
+wwwroot/videos/*.mp4

@@ -20,6 +20,12 @@ dotnet ef migrations add <Name>
 dotnet ef database update
 ```
 
+### Deploy
+
+Runs in production as a container: `Dockerfile` (multi-stage: SDK to build/publish, `aspnet:8.0` runtime for the final image, listens on `:8080` via `ASPNETCORE_URLS`) → pushed to Docker Hub (`wesleysales/sishospedar`) → running on Azure Container Apps (`env-sishospedar`/`sishospedar`, resource group `rg-sishospedar`), backed by Azure SQL Database (`sql-sishospedar-wsales-br`, Basic tier). Redeploy after a code change: `docker build -t wesleysales/sishospedar:latest . && docker push wesleysales/sishospedar:latest && az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:latest`. New migrations need `dotnet ef database update` run against the production connection string separately (see README's Deploy section for the exact command and the firewall-rule dance that requires) — deploying new code does not auto-apply migrations.
+
+Azure App Service (the original plan) hit a hard blocker: the subscription had zero quota for the free F1 tier in every region tried (~9), and quota-increase support tickets require a paid support plan this subscription doesn't have — self-service quota requests only work through the Portal UI, not the API/CLI. Container Apps uses a separate (consumption-based) quota pool and wasn't affected, which is the entire reason it's the current host instead.
+
 ### Tests (`SisHospedar.Tests/`)
 
 xUnit integration tests using `WebApplicationFactory<Program>` — boots the real app in-memory and swaps the SQL Server `AppDbContext` registration for **in-memory SQLite** (`CustomWebApplicationFactory`), so `dotnet test` needs no real database. SQLite (not EF Core's "InMemory" provider) is required because `ConsumoController.Create`'s atomic stock decrement uses `ExecuteUpdateAsync`, which the InMemory provider cannot translate — SQLite is a real relational engine and supports it. `Program.cs`'s own seed data runs against that database on host startup, so tests reuse the known seeded logins (`wesley.sales`/`luan.santos`/`matias.sampaio`/`camila.rocha`/`diego.fernandes` — one per `CargoFuncionario`, login always `firstname.lastname`, password `Senha123`) instead of re-seeding; tests needing specific scenario data (a room in a given `StatusApartamento`, a `Consumo` against a controlled stock level, etc.) insert it directly via `CustomWebApplicationFactory.UsandoContextoAsync`.
