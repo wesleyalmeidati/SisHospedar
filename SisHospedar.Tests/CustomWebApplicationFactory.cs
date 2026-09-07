@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SisHospedar.Data;
+using SisHospedar.Services;
 
 namespace SisHospedar.Tests;
 
@@ -29,6 +30,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     //     stays open — that's why it's kept as a field and only closed in the factory's Dispose.
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
+    // PT: Instância única compartilhada por toda a factory — substitui
+    //     SmtpEmailSender (que precisaria de credenciais SMTP reais) para que os
+    //     testes de redefinição de senha consigam recuperar o link "enviado".
+    // EN: Single instance shared across the whole factory — replaces
+    //     SmtpEmailSender (which would need real SMTP credentials) so
+    //     password-reset tests can retrieve the "sent" link.
+    public FakeEmailSender EmailSender { get; } = new();
+
     static CustomWebApplicationFactory()
     {
         // PT: Program.cs lança exceção se não houver connection string configurada.
@@ -53,6 +62,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             if (descriptor != null) services.Remove(descriptor);
 
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
+
+            var emailDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IEmailSender));
+            if (emailDescriptor != null) services.Remove(emailDescriptor);
+            services.AddSingleton<IEmailSender>(EmailSender);
 
             // PT: Cria o schema a partir do modelo atual (sem depender das migrations),
             //     antes do próprio Program.cs rodar sua seed de dados de teste.

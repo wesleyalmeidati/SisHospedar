@@ -5,6 +5,7 @@
     <dt class="col-sm-3">Nome</dt><dd class="col-sm-9">@Model.Nome</dd>
     <dt class="col-sm-3">Cargo</dt><dd class="col-sm-9">@Model.Cargo</dd>
     <dt class="col-sm-3">Login</dt><dd class="col-sm-9">@Model.Login</dd>
+    <dt class="col-sm-3">E-mail</dt><dd class="col-sm-9">@(Model.Email ?? "—")</dd>
     <dt class="col-sm-3">Hóspede vinculado</dt>
     <dd class="col-sm-9">@(Model.Hospede != null ? Model.Hospede.Nome : "—")</dd>
 </dl>

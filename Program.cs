@@ -47,6 +47,18 @@ builder.Services.AddScoped<IConsumoService, ConsumoService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 
+// PT: Envio real de e-mail (Gmail via SMTP, ver Services/SmtpEmailSender.cs) —
+//     usado pelo fluxo de "esqueci minha senha" (ContaController). Configuração
+//     (Email:Remetente/Email:SenhaApp) vem de appsettings/variável de ambiente,
+//     nunca hardcoded. Nos testes de integração, CustomWebApplicationFactory
+//     substitui por uma fake que só captura o e-mail em memória.
+// EN: Real email sending (Gmail via SMTP, see Services/SmtpEmailSender.cs) —
+//     used by the "forgot my password" flow (ContaController). Configuration
+//     (Email:Remetente/Email:SenhaApp) comes from appsettings/environment
+//     variable, never hardcoded. In integration tests, CustomWebApplicationFactory
+//     swaps it for a fake that just captures the email in memory.
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
 builder.Services.AddControllersWithViews();
 
 // PT: UserManager/SignInManager do ASP.NET Core Identity para as duas identidades,

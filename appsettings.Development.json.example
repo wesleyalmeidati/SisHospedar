@@ -2,5 +2,10 @@
   "_comentario": "Copie este arquivo para 'appsettings.Development.json' (que é ignorado pelo Git) e preencha com sua senha real local. Nunca renomeie para appsettings.json nem remova do .gitignore.",
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Database=SisHospedar;User Id=sa;Password=SUA_SENHA_REAL_AQUI;TrustServerCertificate=True;"
+  },
+  "Email": {
+    "_comentario": "Opcional em dev — sem isso, 'esqueci minha senha' lança exceção ao tentar enviar (mas só chega lá se o login testado tiver e-mail cadastrado). Gere uma senha de app em myaccount.google.com/apppasswords (exige verificação em duas etapas ativa na conta Gmail).",
+    "Remetente": "seuemail@gmail.com",
+    "SenhaApp": "xxxx xxxx xxxx xxxx"
   }
 }

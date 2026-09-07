@@ -52,6 +52,19 @@ namespace SisHospedar.Models
         [Display(Name = "Login")]
         public string Login { get; set; } = string.Empty;
 
+        // PT: Opcional — usado só para enviar o link de redefinição de senha
+        //     (ver ContaController/IEmailSender). Sem e-mail cadastrado, o
+        //     funcionário precisa pedir pra um Administrador/Gerente redefinir
+        //     a senha por ele (não há outro caminho de autoatendimento).
+        // EN: Optional — used only to send the password-reset link (see
+        //     ContaController/IEmailSender). With no email on file, the
+        //     employee needs an Administrador/Gerente to reset their password
+        //     for them (there's no other self-service path).
+        [EmailAddress]
+        [StringLength(150)]
+        [Display(Name = "E-mail")]
+        public string? Email { get; set; }
+
         // PT: Implementação explícita só pra bater a nulidade exigida pela interface
         //     (Hospede pode ter Login/SenhaHash nulos, Funcionario nunca tem) — o
         //     resto do projeto continua usando as propriedades públicas acima,

@@ -48,3 +48,59 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef --version 8.0.8
           dotnet ef migrations has-pending-model-changes --project SisHospedar.csproj
+
+  # PT: Só roda em push direto pra main (não em PR) e só depois que build-and-test
+  #     passar. Tagueia a imagem com o SHA curto do commit (nunca só ":latest") —
+  #     é isso que garante que "az containerapp update --image" sempre detecte uma
+  #     imagem diferente e crie uma revisão nova; ver a nota no README sobre a
+  #     armadilha de reusar a mesma tag entre deploys.
+  #     Migrations não são aplicadas automaticamente aqui — continuam manuais (ver
+  #     seção "Redeploy" do README), pra nunca rodar uma migration destrutiva sem
+  #     supervisão direta contra o banco de produção.
+  # EN: Only runs on a direct push to main (not on a PR) and only after
+  #     build-and-test passes. Tags the image with the commit's short SHA (never
+  #     just ":latest") — that's what guarantees "az containerapp update --image"
+  #     always detects a different image and creates a new revision; see the
+  #     README note about the pitfall of reusing the same tag across deploys.
+  #     Migrations are not applied automatically here — they stay manual (see the
+  #     README's "Redeploy" section), so a destructive migration never runs
+  #     unsupervised against the production database.
+  deploy:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        run: |
+          TAG="${{ github.sha }}"
+          TAG="${TAG:0:7}"
+          docker build -t wesleysales/sishospedar:$TAG -t wesleysales/sishospedar:latest .
+          docker push wesleysales/sishospedar:$TAG
+          docker push wesleysales/sishospedar:latest
+
+      - name: Login no Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Atualiza o Container App
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            TAG="${{ github.sha }}"
+            TAG="${TAG:0:7}"
+            az containerapp update \
+              --name sishospedar \
+              --resource-group rg-sishospedar \
+              --image wesleysales/sishospedar:$TAG

@@ -94,6 +94,10 @@ namespace SisHospedar.Migrations
                     b.Property<int>("Cargo")
                         .HasColumnType("int");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<int?>("HospedeId")
                         .HasColumnType("int");
 

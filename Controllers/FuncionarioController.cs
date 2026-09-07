@@ -60,7 +60,7 @@ namespace SisHospedar.Controllers
         //     ClienteController.Registrar).
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Nome,Cargo,HospedeId")] Funcionario funcionario, string senha)
+        public async Task<IActionResult> Create([Bind("Nome,Cargo,Email,HospedeId")] Funcionario funcionario, string senha)
         {
             ModelState.Remove(nameof(Funcionario.SenhaHash));
             ModelState.Remove(nameof(Funcionario.Login));

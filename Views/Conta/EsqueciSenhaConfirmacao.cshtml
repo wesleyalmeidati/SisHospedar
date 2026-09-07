@@ -1,28 +1,15 @@
 @{
     ViewData["Title"] = "Redefinição de senha";
-    var link = ViewData["Link"] as string;
 }
 <div class="auth-shell">
     <div class="auth-card">
         <p class="auth-eyebrow">SisHospedar</p>
-        <h2 class="auth-title">Verifique o link</h2>
-        @if (link != null)
-        {
-            @* PT: Modo demonstração — sem provedor de e-mail configurado, o link
-                   aparece direto aqui em vez de ser enviado. Em produção, só o e-mail
-                   receberia; a geração/validação do token é a mesma nos dois casos.
-               EN: Demo mode — with no email provider configured, the link shows up
-                   right here instead of being sent. In production, only the email
-                   would receive it; token generation/validation is the same either way. *@
-            <div class="alert alert-warning" style="font-size:.85rem;">
-                <strong>Modo demonstração:</strong> este projeto ainda não envia e-mail de verdade. Em produção, este link chegaria por e-mail. Por enquanto, aqui está ele:
-            </div>
-            <p class="text-center" style="word-break:break-all;font-size:.85rem;"><a href="@link">@link</a></p>
-        }
-        else
-        {
-            <p class="text-center text-muted">Se existir uma conta com esse login, um link de redefinição foi gerado.</p>
-        }
+        <h2 class="auth-title">Verifique seu e-mail</h2>
+        <p class="text-center text-muted">
+            Se existir uma conta com esse login e um e-mail cadastrado, enviamos um link de redefinição para ele.
+            Sem e-mail cadastrado (comum para contas de funcionário criadas pela recepção), peça a um Administrador
+            ou Gerente para redefinir sua senha.
+        </p>
         <p class="text-center mt-4 mb-0" style="font-size:.88rem;">
             <a asp-controller="Home" asp-action="Login">Voltar ao login</a>
         </p>

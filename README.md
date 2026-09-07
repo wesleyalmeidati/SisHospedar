@@ -132,18 +132,21 @@ Dockerfile (multi-stage: build com o SDK, imagem final só com o runtime)
 
 Motivo de Container Apps em vez de App Service: a assinatura usada não tinha cota liberada pro tier gratuito (F1) do App Service em nenhuma das ~9 regiões testadas — comum em assinaturas novas. Container Apps usa outro pool de cota (consumo serverless, não VM reservada) e não esbarrou nessa restrição.
 
-### Redeploy (depois de alterar o código)
+### Redeploy — automático via CI/CD
+
+Todo push em `main` que passa no `build-and-test` dispara o job `deploy` (`.github/workflows/ci.yml`): builda a imagem, tagueia com o SHA curto do commit (nunca `:latest` sozinho — ver a nota abaixo), dá push no Docker Hub, autentica no Azure via um Service Principal com Contributor restrito ao resource group `rg-sishospedar` (secret `AZURE_CREDENTIALS`) e roda `az containerapp update --image wesleysales/sishospedar:<sha>`. Não precisa mais rodar nada manualmente — só dar merge/push em `main`.
+
+**Por que tag com SHA em vez de `:latest`**: o Container Apps só cria uma revisão nova quando a *string* de imagem muda. Com `:latest` fixo, um `update` pode "ter sucesso" sem detectar que o conteúdo da imagem mudou, e o site continua servindo a revisão antiga (isso aconteceu de verdade — foi assim que o bug do símbolo "¤" ficou no ar mesmo depois do primeiro redeploy). Tagueando com o SHA do commit, toda imagem tem uma string diferente, então toda atualização vira revisão nova de forma garantida.
+
+Se precisar redeployar manualmente (fora do CI):
 
 ```bash
-docker build -t wesleysales/sishospedar:latest .
-docker push wesleysales/sishospedar:latest
-
-az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:latest --revision-suffix "fix$(date +%H%M%S)"
+docker build -t wesleysales/sishospedar:manual-$(date +%s) .
+docker push wesleysales/sishospedar:manual-$(date +%s)
+az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:manual-$(date +%s)
 ```
 
-**Atenção à tag `:latest`**: o Container Apps só cria uma revisão nova quando a *string* de imagem muda — como a tag continua `:latest` em todo redeploy, ele não percebe que o conteúdo da imagem mudou e o `update` vira um no-op silencioso (o site continua servindo a revisão antiga). É por isso que `--revision-suffix` (qualquer valor único, tipo um timestamp) é obrigatório em todo redeploy, não opcional — sem ele, `az containerapp update --image` pode "ter sucesso" sem publicar nada de novo. Depois de confirmar que a revisão nova está no ar (`az containerapp revision list --name sishospedar --resource-group rg-sishospedar -o table`), desative a antiga: `az containerapp revision deactivate --name sishospedar --resource-group rg-sishospedar --revision <nome-da-revisao-antiga>`.
-
-Se uma migration nova foi criada, aplique contra o banco de produção antes do redeploy (substitua a senha pela guardada com você, nunca commitada):
+Migrations **não** são aplicadas automaticamente pelo CI (de propósito — nunca rodar algo potencialmente destrutivo sem supervisão direta). Se uma migration nova foi criada, aplique contra o banco de produção manualmente antes do próximo deploy (substitua a senha pela guardada com você, nunca commitada):
 
 ```bash
 ConnectionStrings__DefaultConnection="Server=tcp:sql-sishospedar-wsales-br.database.windows.net,1433;Database=SisHospedar;User ID=sqladmin;Password=<senha>;Encrypt=True;TrustServerCertificate=False;" \
@@ -151,6 +154,19 @@ dotnet ef database update
 ```
 
 (Precisa liberar seu IP no firewall do SQL Server antes: `az sql server firewall-rule create --resource-group rg-sishospedar --server sql-sishospedar-wsales-br --name AllowMyIP --start-ip-address <seu-ip> --end-ip-address <seu-ip>` — remova a regra depois com `az sql server firewall-rule delete`.)
+
+## E-mail
+
+O link de "esqueci minha senha" (`ContaController`) sai por e-mail de verdade, via `IEmailSender`/`SmtpEmailSender` (`Services/`) usando SMTP do Gmail com uma [senha de app](https://myaccount.google.com/apppasswords) — não a senha normal da conta (exige verificação em duas etapas ativa). Configuração (`Email:Remetente`/`Email:SenhaApp`, mais `Email:SmtpHost`/`Email:SmtpPort` opcionais) nunca fica no código: local vem de `appsettings.Development.json` (gitignored, copie de `appsettings.Development.json.example`); em produção, vem de variáveis de ambiente no Container App, com a senha guardada como *secret* do Container Apps (mesmo padrão da connection string do SQL):
+
+```bash
+az containerapp secret set --name sishospedar --resource-group rg-sishospedar --secrets email-senha-app="<senha-de-app>"
+az containerapp update --name sishospedar --resource-group rg-sishospedar --set-env-vars \
+  "Email__Remetente=<seu-email>@gmail.com" \
+  "Email__SenhaApp=secretref:email-senha-app"
+```
+
+Só funciona para contas que têm e-mail cadastrado — `Hospede.Email` (preenchido no autocadastro em `/Cliente/Registrar`) ou `Funcionario.Email` (opcional, preenchido em `/Funcionario/Create`). Contas sem e-mail (a maioria das seedadas por `Program.cs`, que existem só para teste) precisam de um Administrador/Gerente pra redefinir a senha manualmente — não há outro caminho de autoatendimento. Nos testes de integração (`SisHospedar.Tests`), `IEmailSender` é substituído por uma `FakeEmailSender` que só captura o e-mail em memória, sem enviar nada de verdade (ver `CustomWebApplicationFactory`/`IdentityTests`).
 
 ## Fluxo de uma estadia
 
@@ -193,10 +209,10 @@ SisHospedar/
 - [x] Login único com detecção automática de identidade (funcionário x hóspede) e geração automática de login de funcionário
 - [x] Prevenção de reserva duplicada (conflito de datas) e status `Reservado` no apartamento
 - [x] Redesign completo da interface (design system próprio, fora do Bootstrap padrão)
-- [x] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — via uma store customizada (`EntityUserStore`, ver `CLAUDE.md`) em vez de herdar `IdentityUser<T>`, evitando a duplicação de tabelas de apoio que o caminho "óbvio" exigiria para duas identidades independentes; redefinição de senha em modo demonstração (mostra o link na tela em vez de enviar e-mail, já que o projeto não tem provedor de e-mail configurado)
+- [x] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — via uma store customizada (`EntityUserStore`, ver `CLAUDE.md`) em vez de herdar `IdentityUser<T>`, evitando a duplicação de tabelas de apoio que o caminho "óbvio" exigiria para duas identidades independentes
 - [x] Deploy em nuvem — Docker + Docker Hub + Azure Container Apps + Azure SQL Database (ver seção [Deploy](#deploy)); link no topo deste README
-- [ ] E-mail de verdade para o link de redefinição de senha (trocar o modo demonstração por um `IEmailSender`)
-- [ ] CI/CD automatizado (build + push + `containerapp update` a cada merge em `main`, hoje é manual)
+- [x] E-mail de verdade para o link de redefinição de senha — `IEmailSender`/`SmtpEmailSender` via Gmail (ver seção [E-mail](#e-mail))
+- [x] CI/CD automatizado — build + testes + push + `containerapp update` a cada push em `main` (ver `.github/workflows/ci.yml`), tagueando a imagem com o SHA do commit em vez de `:latest`
 - [ ] API REST para consumo externo
 - [ ] Pagamento — via integração com um gateway de mercado (Stripe/Mercado Pago/PagSeguro), não implementação própria; deixado como última etapa de propósito, para não acoplar o modelo de domínio a isso antes de ele estar maduro
 

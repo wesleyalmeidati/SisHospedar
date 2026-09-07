@@ -30,6 +30,7 @@ public class IdentityTests : TestesIntegracaoBase
                 Nome = "Teste Identity",
                 Cargo = CargoFuncionario.Recepcionista,
                 Login = login,
+                Email = $"{login}@teste.local",
                 // PT: Sem isso o Identity lança "User security stamp cannot be null" ao
                 //     validar (ver EntityUserStore/Program.cs) — o mesmo motivo pelo
                 //     qual o seed de Program.cs também precisou passar a setar isso.
@@ -75,12 +76,20 @@ public class IdentityTests : TestesIntegracaoBase
         var login = await CriarFuncionarioAsync("SenhaAntiga123");
         var client = CriarCliente();
 
-        var pedido = await PostComAntiforgeryAsync(client, "/Conta/EsqueciSenha", "/Conta/EsqueciSenha",
+        await PostComAntiforgeryAsync(client, "/Conta/EsqueciSenha", "/Conta/EsqueciSenha",
             new Dictionary<string, string> { ["login"] = login });
-        var corpoPedido = await pedido.Content.ReadAsStringAsync();
 
-        var linkMatch = Regex.Match(corpoPedido, "href=\"([^\"]*RedefinirSenha[^\"]*)\"");
-        Assert.True(linkMatch.Success, "Link de redefinição não encontrado na resposta de /Conta/EsqueciSenha.");
+        // PT: O link não aparece mais na resposta HTTP (ver ContaController) — vai
+        //     por e-mail de verdade, capturado aqui pela FakeEmailSender registrada
+        //     em CustomWebApplicationFactory no lugar da SmtpEmailSender real.
+        // EN: The link no longer appears in the HTTP response (see ContaController)
+        //     — it goes out by real email, captured here through the FakeEmailSender
+        //     CustomWebApplicationFactory registers in place of the real SmtpEmailSender.
+        var email = Factory.EmailSender.Enviados.SingleOrDefault(e => e.Destinatario == $"{login}@teste.local");
+        Assert.NotNull(email);
+
+        var linkMatch = Regex.Match(email!.CorpoHtml, "href=\"([^\"]*RedefinirSenha[^\"]*)\"");
+        Assert.True(linkMatch.Success, "Link de redefinição não encontrado no corpo do e-mail.");
         var link = WebUtility.HtmlDecode(linkMatch.Groups[1].Value);
 
         var telaRedefinir = await client.GetAsync(link);
