@@ -19,6 +19,7 @@
                     var badge = item.Status switch {
                         StatusApartamento.Disponivel => "success",
                         StatusApartamento.Ocupado => "danger",
+                        StatusApartamento.Reservado => "info",
                         _ => "warning"
                     };
                 }

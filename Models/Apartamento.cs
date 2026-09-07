@@ -10,7 +10,17 @@ namespace SisHospedar.Models
     {
         Disponivel,
         Ocupado,
-        Manutencao
+        Manutencao,
+
+        // PT: Tem uma Reserva Pendente em cima — some das listas de "disponível para
+        //     reservar/check-in" (ver ReservaService), mas ainda não é uma Hospedagem
+        //     de verdade. Volta a Disponivel se a reserva for cancelada, ou vira
+        //     Ocupado quando a recepção confirma (check-in).
+        // EN: Has a Pendente Reserva on it — drops out of "available to book/check-in"
+        //     lists (see ReservaService), but isn't an actual Hospedagem yet. Goes back
+        //     to Disponivel if the reservation is cancelled, or becomes Ocupado when
+        //     reception confirms it (check-in).
+        Reservado
     }
 
     // PT: Representa um quarto/apartamento do hotel.

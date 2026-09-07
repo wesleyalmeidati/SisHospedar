@@ -59,7 +59,7 @@ public class ConsumoTests : TestesIntegracaoBase
     {
         var (hospedagemId, produtoId) = await CriarHospedagemEProdutoAsync(estoque: 10);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(client,
             $"/Consumo/Create?hospedagemId={hospedagemId}", "/Consumo/Create",
@@ -88,7 +88,7 @@ public class ConsumoTests : TestesIntegracaoBase
     {
         var (hospedagemId, produtoId) = await CriarHospedagemEProdutoAsync(estoque: 2);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(client,
             $"/Consumo/Create?hospedagemId={hospedagemId}", "/Consumo/Create",
@@ -116,7 +116,7 @@ public class ConsumoTests : TestesIntegracaoBase
     {
         var (hospedagemId, produtoId) = await CriarHospedagemEProdutoAsync(estoque: 10, finalizada: true);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(client,
             $"/Consumo/Create?hospedagemId={hospedagemId}", "/Consumo/Create",

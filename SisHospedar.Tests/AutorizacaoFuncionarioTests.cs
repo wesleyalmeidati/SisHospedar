@@ -39,7 +39,7 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
     public async Task Recepcionista_AcessaHospedagem_MasNaoAcessaFuncionario()
     {
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var hospedagem = await client.GetAsync("/Hospedagem");
         Assert.Equal(HttpStatusCode.OK, hospedagem.StatusCode);
@@ -49,8 +49,8 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
     }
 
     [Theory]
-    [InlineData("admin")]
-    [InlineData("gerente")]
+    [InlineData("wesley.sales")]
+    [InlineData("luan.santos")]
     public async Task AdministradorOuGerente_AcessaFuncionario(string login)
     {
         var client = CriarCliente();
@@ -67,7 +67,7 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
         var client = CriarCliente();
 
         var resposta = await PostComAntiforgeryAsync(client, "/Home/Login", "/Home/Login",
-            new Dictionary<string, string> { ["login"] = "admin", ["senha"] = "senha-errada" });
+            new Dictionary<string, string> { ["login"] = "wesley.sales", ["senha"] = "senha-errada" });
 
         // PT: Login inválido apenas re-renderiza a view (200), não redireciona.
         // EN: Invalid login just re-renders the view (200), it doesn't redirect.
@@ -85,7 +85,7 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
         // EN: /Reserva/Create belongs to the guest identity, not the employee one —
         //     same controller, filter applied per-method, not on the class.
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await client.GetAsync("/Reserva/Create");
 

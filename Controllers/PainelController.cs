@@ -35,12 +35,14 @@ namespace SisHospedar.Controllers
                     ViewData["ApartamentosOcupados"] = await _context.Apartamentos.CountAsync(a => a.Status == StatusApartamento.Ocupado);
                     ViewData["ReservasPendentes"] = await _context.Reservas.CountAsync(r => r.Status == StatusReserva.Pendente);
                     ViewData["TotalFuncionarios"] = await _context.Funcionarios.CountAsync();
+                    ViewData["ChegadasHoje"] = await ObterChegadasHojeAsync();
                     break;
 
                 case CargoFuncionario.Recepcionista:
                     ViewData["ReservasPendentes"] = await _context.Reservas.CountAsync(r => r.Status == StatusReserva.Pendente);
                     ViewData["PedidosEncerramento"] = await _context.Hospedagens.CountAsync(h => h.SolicitouEncerramento && !h.Finalizada);
                     ViewData["HospedagensAtivas"] = await _context.Hospedagens.CountAsync(h => !h.Finalizada);
+                    ViewData["ChegadasHoje"] = await ObterChegadasHojeAsync();
                     break;
 
                 case CargoFuncionario.Limpeza:
@@ -59,5 +61,21 @@ namespace SisHospedar.Controllers
 
             return View();
         }
+
+        // PT: Reservas pendentes cuja data de entrada é hoje — comparado com a data do
+        //     próprio servidor (DateTime.Today), sem depender de nenhum relógio externo.
+        //     É o alerta "chega hóspede hoje" pedido pra recepção/gerência não perder
+        //     nenhuma chegada esquecida numa lista de pendentes sem ordenação por data.
+        // EN: Pending reservations whose check-in date is today — compared against the
+        //     server's own clock (DateTime.Today), no external time source involved.
+        //     This is the "guest arriving today" alert reception/management asked for,
+        //     so no arrival gets missed in an unsorted list of pending requests.
+        private async Task<List<Reserva>> ObterChegadasHojeAsync() =>
+            await _context.Reservas
+                .Include(r => r.Hospede)
+                .Include(r => r.Apartamento)
+                .Where(r => r.Status == StatusReserva.Pendente && r.DataEntrada == DateTime.Today)
+                .OrderBy(r => r.Hospede!.Nome)
+                .ToListAsync();
     }
 }

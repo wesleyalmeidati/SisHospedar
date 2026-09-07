@@ -186,6 +186,7 @@ namespace SisHospedar.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Telefone")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 

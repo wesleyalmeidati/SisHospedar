@@ -18,3 +18,8 @@ appsettings.Local.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Vídeo do hero da Home — arquivo grande, inserido manualmente, não versionado.
+# Coloque seu arquivo em wwwroot/videos/hero.mp4 (veja wwwroot/videos/README.md).
+wwwroot/videos/*
+!wwwroot/videos/README.md

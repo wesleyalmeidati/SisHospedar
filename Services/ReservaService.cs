@@ -21,6 +21,32 @@ namespace SisHospedar.Services
             if (apartamento == null || apartamento.Status != StatusApartamento.Disponivel)
                 return (false, "Apartamento não está mais disponível.");
 
+            // PT: Apartamento.Status sozinho não evita reserva duplicada — ele só vira
+            //     Ocupado quando UMA das reservas é confirmada (check-in), então duas
+            //     pessoas podem pedir o mesmo quarto no mesmo período enquanto ambas
+            //     ainda estão Pendente. Aqui barramos isso checando sobreposição de
+            //     datas contra qualquer reserva já Pendente ou Confirmada no apartamento.
+            // EN: Apartamento.Status alone doesn't prevent a duplicate booking — it only
+            //     becomes Ocupado when ONE of the requests is confirmed (check-in), so
+            //     two people can request the same room for the same period while both
+            //     are still Pendente. This blocks that by checking date overlap against
+            //     any Pendente or Confirmada reserva already on the apartment.
+            var conflito = await _context.Reservas.AnyAsync(r =>
+                r.ApartamentoId == reserva.ApartamentoId &&
+                (r.Status == StatusReserva.Pendente || r.Status == StatusReserva.Confirmada) &&
+                r.DataEntrada < reserva.DataSaidaPrevista &&
+                r.DataSaidaPrevista > reserva.DataEntrada);
+            if (conflito)
+                return (false, "Já existe uma reserva para este apartamento nesse período.");
+
+            // PT: Marca o apartamento como Reservado — ele some das listas de "disponível
+            //     pra reservar/check-in" (ReservaController.Create, HospedagemController.Create)
+            //     até a recepção confirmar (vira Ocupado) ou cancelar (volta a Disponivel).
+            // EN: Marks the apartment as Reservado — it drops out of the "available to
+            //     book/check-in" lists (ReservaController.Create, HospedagemController.Create)
+            //     until reception confirms it (becomes Ocupado) or cancels it (goes back
+            //     to Disponivel).
+            apartamento.Status = StatusApartamento.Reservado;
             reserva.Status = StatusReserva.Pendente;
             _context.Add(reserva);
             await _context.SaveChangesAsync();
@@ -36,7 +62,7 @@ namespace SisHospedar.Services
             if (reserva == null || reserva.Status != StatusReserva.Pendente)
                 return null;
 
-            if (reserva.Apartamento == null || reserva.Apartamento.Status != StatusApartamento.Disponivel)
+            if (reserva.Apartamento == null || reserva.Apartamento.Status != StatusApartamento.Reservado)
                 return "Apartamento não está mais disponível para confirmar esta reserva.";
 
             // PT: Confirmar a reserva = fazer o check-in (cria a Hospedagem de verdade).
@@ -60,10 +86,15 @@ namespace SisHospedar.Services
 
         public async Task<bool> CancelarAsync(int reservaId)
         {
-            var reserva = await _context.Reservas.FindAsync(reservaId);
+            var reserva = await _context.Reservas
+                .Include(r => r.Apartamento)
+                .FirstOrDefaultAsync(r => r.ReservaId == reservaId);
             if (reserva == null || reserva.Status != StatusReserva.Pendente) return false;
 
             reserva.Status = StatusReserva.Cancelada;
+            if (reserva.Apartamento != null && reserva.Apartamento.Status == StatusApartamento.Reservado)
+                reserva.Apartamento.Status = StatusApartamento.Disponivel;
+
             await _context.SaveChangesAsync();
             return true;
         }

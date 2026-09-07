@@ -20,9 +20,10 @@ namespace SisHospedar.Models
         [Display(Name = "CPF")]
         public string Cpf { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "O telefone é obrigatório.")]
         [StringLength(20)]
         [Display(Name = "Telefone")]
-        public string? Telefone { get; set; }
+        public string Telefone { get; set; } = string.Empty;
 
         [Required]
         [DataType(DataType.Date)]

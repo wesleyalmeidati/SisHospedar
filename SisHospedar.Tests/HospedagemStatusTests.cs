@@ -44,7 +44,7 @@ public class HospedagemStatusTests : TestesIntegracaoBase
     {
         var (hospedeId, apartamentoId) = await CriarHospedeEApartamentoAsync(StatusApartamento.Disponivel);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(client, "/Hospedagem/Create", "/Hospedagem/Create",
             new Dictionary<string, string>
@@ -71,7 +71,7 @@ public class HospedagemStatusTests : TestesIntegracaoBase
     {
         var (hospedeId, apartamentoId) = await CriarHospedeEApartamentoAsync(status);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(client, "/Hospedagem/Create", "/Hospedagem/Create",
             new Dictionary<string, string>
@@ -112,7 +112,7 @@ public class HospedagemStatusTests : TestesIntegracaoBase
         });
 
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         // PT: Reproduz o form real de Views/Hospedagem/Finalizar.cshtml, que posta para
         //     /Hospedagem/Finalizar/{id} via asp-route-id (o id vai na URL, não no corpo).

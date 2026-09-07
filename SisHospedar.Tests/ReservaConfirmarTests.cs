@@ -52,9 +52,13 @@ public class ReservaConfirmarTests : TestesIntegracaoBase
     [Fact]
     public async Task Confirmar_CriaHospedagemEOcupaApartamento()
     {
-        var reservaId = await CriarReservaPendenteAsync(StatusApartamento.Disponivel);
+        // PT: Reservado, não Disponivel — é o status que CriarPedidoAsync deixa no
+        //     apartamento assim que a reserva é criada (ver ReservaService).
+        // EN: Reservado, not Disponivel — that's the status CriarPedidoAsync leaves on
+        //     the apartment as soon as the reservation is created (see ReservaService).
+        var reservaId = await CriarReservaPendenteAsync(StatusApartamento.Reservado);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(
             client, "/Reserva", $"/Reserva/Confirmar/{reservaId}", new Dictionary<string, string>());
@@ -79,7 +83,7 @@ public class ReservaConfirmarTests : TestesIntegracaoBase
     {
         var reservaId = await CriarReservaPendenteAsync(StatusApartamento.Ocupado);
         var client = CriarCliente();
-        await LoginComoAsync(client, "recepcao", "Senha123");
+        await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
         var resposta = await PostComAntiforgeryAsync(
             client, "/Reserva", $"/Reserva/Confirmar/{reservaId}", new Dictionary<string, string>());

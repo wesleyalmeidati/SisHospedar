@@ -27,6 +27,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IHospedagemService, HospedagemService>();
 builder.Services.AddScoped<IConsumoService, ConsumoService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
+builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 
 builder.Services.AddControllersWithViews();
 
@@ -93,13 +94,24 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Apartamentos.Any())
     {
+        // PT: Numeração única "01".."10" (não mais 101/201/Suite-01) — 2 Standard, 4
+        //     Executivo, 4 Master, nessa ordem.
+        // EN: Single "01".."10" numbering (no more 101/201/Suite-01) — 2 Standard, 4
+        //     Executive, 4 Master, in that order.
         db.Apartamentos.AddRange(
-            new Apartamento { Numero = "101", Capacidade = 2, ValorDiaria = 180.00m, Status = StatusApartamento.Disponivel },
-            new Apartamento { Numero = "102", Capacidade = 2, ValorDiaria = 180.00m, Status = StatusApartamento.Disponivel },
-            new Apartamento { Numero = "201", Capacidade = 4, ValorDiaria = 320.00m, Status = StatusApartamento.Disponivel },
-            new Apartamento { Numero = "202", Capacidade = 4, ValorDiaria = 320.00m, Status = StatusApartamento.Manutencao },
-            new Apartamento { Numero = "301", Capacidade = 6, ValorDiaria = 480.00m, Status = StatusApartamento.Disponivel },
-            new Apartamento { Numero = "Suite-01", Capacidade = 3, ValorDiaria = 650.00m, Status = StatusApartamento.Disponivel }
+            // Standard (1 cama de solteiro) — R$100/diária
+            new Apartamento { Numero = "01", Capacidade = 1, ValorDiaria = 100.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "02", Capacidade = 1, ValorDiaria = 100.00m, Status = StatusApartamento.Disponivel },
+            // Executivo (1 cama de casal) — R$200/diária
+            new Apartamento { Numero = "03", Capacidade = 2, ValorDiaria = 200.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "04", Capacidade = 2, ValorDiaria = 200.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "05", Capacidade = 2, ValorDiaria = 200.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "06", Capacidade = 2, ValorDiaria = 200.00m, Status = StatusApartamento.Disponivel },
+            // Master (1 cama de casal + 1 de solteiro) — R$300/diária
+            new Apartamento { Numero = "07", Capacidade = 3, ValorDiaria = 300.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "08", Capacidade = 3, ValorDiaria = 300.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "09", Capacidade = 3, ValorDiaria = 300.00m, Status = StatusApartamento.Disponivel },
+            new Apartamento { Numero = "10", Capacidade = 3, ValorDiaria = 300.00m, Status = StatusApartamento.Disponivel }
         );
     }
 
@@ -122,13 +134,19 @@ using (var scope = app.Services.CreateScope())
     {
         var hasher = new PasswordHasher<Funcionario>();
 
+        // PT: Login = primeiro nome + "." + sobrenome, sempre gerado pelo sistema — é
+        //     exatamente o que FuncionarioController.Create faz ao cadastrar um novo
+        //     funcionário (só o hóspede escolhe o próprio login, no autocadastro).
+        // EN: Login = first name + "." + last name, always system-generated — this is
+        //     exactly what FuncionarioController.Create does when registering a new
+        //     employee (only the guest picks their own login, at self-registration).
         var funcionariosTeste = new[]
         {
-            new Funcionario { Nome = "Wesley Almeida (Admin)", Cargo = CargoFuncionario.Administrador, Login = "admin" },
-            new Funcionario { Nome = "Gerente Solaris", Cargo = CargoFuncionario.Gerente, Login = "gerente" },
-            new Funcionario { Nome = "Recepção Solaris", Cargo = CargoFuncionario.Recepcionista, Login = "recepcao" },
-            new Funcionario { Nome = "Equipe de Limpeza", Cargo = CargoFuncionario.Limpeza, Login = "limpeza" },
-            new Funcionario { Nome = "Equipe de Vallet", Cargo = CargoFuncionario.Vallet, Login = "vallet" },
+            new Funcionario { Nome = "Wesley Sales", Cargo = CargoFuncionario.Administrador, Login = "wesley.sales" },
+            new Funcionario { Nome = "Luan Santos", Cargo = CargoFuncionario.Gerente, Login = "luan.santos" },
+            new Funcionario { Nome = "Matias Sampaio", Cargo = CargoFuncionario.Recepcionista, Login = "matias.sampaio" },
+            new Funcionario { Nome = "Camila Rocha", Cargo = CargoFuncionario.Limpeza, Login = "camila.rocha" },
+            new Funcionario { Nome = "Diego Fernandes", Cargo = CargoFuncionario.Vallet, Login = "diego.fernandes" },
         };
 
         foreach (var f in funcionariosTeste)

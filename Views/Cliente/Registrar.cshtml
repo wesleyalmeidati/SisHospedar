@@ -1,9 +1,9 @@
 @model Hospede
 @{ ViewData["Title"] = "Criar Conta"; }
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <p class="section-eyebrow">Hotel Solaris</p>
-        <h2>Criar sua conta</h2>
+<div class="auth-shell">
+    <div class="auth-card" style="max-width:520px;">
+        <p class="auth-eyebrow">SisHospedar</p>
+        <h2 class="auth-title">Criar sua conta</h2>
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
         <form asp-action="Registrar" method="post">
             <div class="mb-3">
@@ -35,7 +35,7 @@
                 <input name="senha" type="password" class="form-control" />
             </div>
             <button type="submit" class="btn btn-primary w-100">Criar Conta</button>
-            <p class="text-center mt-3 mb-0">
+            <p class="text-center mt-4 mb-0" style="font-size:.88rem;">
                 Já tem conta? <a asp-action="Login">Entrar</a>
             </p>
         </form>

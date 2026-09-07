@@ -7,19 +7,29 @@ using SisHospedar.Authentication;
 using SisHospedar.Data;
 using SisHospedar.Filters;
 using SisHospedar.Models;
+using SisHospedar.Services;
 
 namespace SisHospedar.Controllers
 {
     // PT: Portal de autoatendimento do hóspede — cookie de autenticação próprio
-    //     (esquema Esquemas.Hospede), independente do cookie de funcionário.
-    // EN: Guest self-service portal — its own authentication cookie
-    //     (Esquemas.Hospede scheme), independent from the employee cookie.
+    //     (esquema Esquemas.Hospede), independente do cookie de funcionário. Login é
+    //     um dos dois pontos de entrada do login único (o outro é HomeController.Login)
+    //     — ver IAutenticacaoService.
+    // EN: Guest self-service portal — its own authentication cookie (Esquemas.Hospede
+    //     scheme), independent from the employee cookie. Login is one of the two
+    //     entry points for the unified login (the other is HomeController.Login) —
+    //     see IAutenticacaoService.
     public class ClienteController : Controller
     {
         private readonly AppDbContext _context;
         private readonly PasswordHasher<Hospede> _hasher = new();
+        private readonly IAutenticacaoService _autenticacao;
 
-        public ClienteController(AppDbContext context) => _context = context;
+        public ClienteController(AppDbContext context, IAutenticacaoService autenticacao)
+        {
+            _context = context;
+            _autenticacao = autenticacao;
+        }
 
         public IActionResult Registrar() => View();
 
@@ -57,7 +67,7 @@ namespace SisHospedar.Controllers
 
                 await AssinarCookieAsync(hospede);
 
-                TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao Hotel Solaris.";
+                TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao SisHospedar.";
                 return RedirectToAction("Create", "Reserva");
             }
             return View(hospede);
@@ -65,18 +75,18 @@ namespace SisHospedar.Controllers
 
         public IActionResult Login() => View();
 
+        // PT: Mesmo login único de HomeController.Login — quem digitar credenciais de
+        //     funcionário aqui também entra normalmente, só que como funcionário.
+        // EN: The same unified login as HomeController.Login — someone typing an
+        //     employee's credentials here also gets signed in fine, just as an employee.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string login, string senha)
         {
-            var hospede = await _context.Hospedes.FirstOrDefaultAsync(h => h.Login == login);
+            var tipo = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
 
-            if (hospede != null && !string.IsNullOrEmpty(hospede.SenhaHash) &&
-                _hasher.VerifyHashedPassword(hospede, hospede.SenhaHash, senha) == PasswordVerificationResult.Success)
-            {
-                await AssinarCookieAsync(hospede);
-                return RedirectToAction(nameof(MinhaConta));
-            }
+            if (tipo == TipoIdentidadeLogada.Hospede) return RedirectToAction(nameof(MinhaConta));
+            if (tipo == TipoIdentidadeLogada.Funcionario) return RedirectToAction("Index", "Painel");
 
             ModelState.AddModelError("", "Login ou senha inválidos.");
             return View();

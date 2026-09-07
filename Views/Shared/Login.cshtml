@@ -1,0 +1,32 @@
+@{ ViewData["Title"] = "Entrar"; }
+@* PT: Uma única tela de login pra funcionário e hóspede — o form não pergunta "quem
+       você é", só login/senha; IAutenticacaoService descobre sozinho e redireciona
+       pra área certa. Compartilhada entre HomeController.Login e ClienteController.Login
+       via convenção do MVC (Views/Shared), então as duas rotas renderizam exatamente
+       este arquivo.
+   EN: A single login screen for both employees and guests — the form doesn't ask
+       "who are you", just login/password; IAutenticacaoService figures it out on its
+       own and redirects to the right area. Shared between HomeController.Login and
+       ClienteController.Login via MVC convention (Views/Shared), so both routes
+       render this exact file. *@
+<div class="auth-shell">
+    <div class="auth-card">
+        <p class="auth-eyebrow">SisHospedar</p>
+        <h2 class="auth-title">Entrar</h2>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <form asp-action="Login" method="post">
+            <div class="mb-3">
+                <label class="form-label">Login</label>
+                <input name="login" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Senha</label>
+                <input name="senha" type="password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Entrar</button>
+            <p class="text-center mt-4 mb-0" style="font-size:.88rem;">
+                Ainda não tem conta? <a asp-controller="Cliente" asp-action="Registrar">Criar conta</a>
+            </p>
+        </form>
+    </div>
+</div>

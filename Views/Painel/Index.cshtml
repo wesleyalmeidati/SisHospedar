@@ -2,37 +2,70 @@
 @{
     ViewData["Title"] = "Painel";
     var cargo = (CargoFuncionario)ViewData["Cargo"]!;
+    var chegadasHoje = ViewData["ChegadasHoje"] as List<Reserva>;
 }
 
 <p class="section-eyebrow">Painel — @cargo</p>
 <h2>Olá, @User.FindFirstValue(ClaimTypes.Name)</h2>
 
+@* PT: "Chega hóspede hoje" — comparado com a data do servidor (ver
+       PainelController.ObterChegadasHojeAsync). Fica logo abaixo do cabeçalho, antes
+       dos cards, pra recepção/gerência baterem o olho assim que entram no painel.
+   EN: "Guest arriving today" — compared against the server's date (see
+       PainelController.ObterChegadasHojeAsync). Sits right under the header, before
+       the stat cards, so reception/management spot it the moment they open the panel. *@
+@if (chegadasHoje != null && chegadasHoje.Any())
+{
+    <div class="alert alert-warning mt-3">
+        <strong>@chegadasHoje.Count</strong> hóspede(s) chegando hoje, aguardando check-in:
+        <div class="table-responsive mt-2">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Hóspede</th><th>Apartamento</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var r in chegadasHoje)
+                {
+                    <tr>
+                        <td>@r.Hospede?.Nome</td>
+                        <td>@r.Apartamento?.Numero</td>
+                        <td>
+                            <form asp-controller="Reserva" asp-action="Confirmar" asp-route-id="@r.ReservaId" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Confirmar chegada</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
 @if (cargo == CargoFuncionario.Administrador || cargo == CargoFuncionario.Gerente)
 {
     <div class="row g-3 mt-2">
         <div class="col-md-3 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Apartamentos</p>
                 <h3>@ViewData["TotalApartamentos"]</h3>
-            </div></div>
+            </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Ocupados agora</p>
                 <h3>@ViewData["ApartamentosOcupados"]</h3>
-            </div></div>
+            </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Reservas pendentes</p>
                 <h3>@ViewData["ReservasPendentes"]</h3>
-            </div></div>
+            </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Funcionários</p>
                 <h3>@ViewData["TotalFuncionarios"]</h3>
-            </div></div>
+            </div>
         </div>
     </div>
     <div class="mt-4 d-flex gap-2 flex-wrap">
@@ -46,22 +79,22 @@ else if (cargo == CargoFuncionario.Recepcionista)
 {
     <div class="row g-3 mt-2">
         <div class="col-md-4 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Reservas pendentes</p>
                 <h3>@ViewData["ReservasPendentes"]</h3>
-            </div></div>
+            </div>
         </div>
         <div class="col-md-4 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Pedidos de encerramento</p>
                 <h3>@ViewData["PedidosEncerramento"]</h3>
-            </div></div>
+            </div>
         </div>
         <div class="col-md-4 col-6">
-            <div class="card"><div class="card-body">
+            <div class="stat-card">
                 <p class="text-muted mb-1">Hospedagens ativas</p>
                 <h3>@ViewData["HospedagensAtivas"]</h3>
-            </div></div>
+            </div>
         </div>
     </div>
     <div class="mt-4 d-flex gap-2 flex-wrap">

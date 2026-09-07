@@ -1,53 +1,104 @@
-@model IEnumerable<Apartamento>
+@model IEnumerable<(int Capacidade, decimal ValorDiaria)>
 @{
-    ViewData["Title"] = "Hotel Solaris";
+    ViewData["Title"] = "SisHospedar";
+
+    // PT: O modelo de Apartamento não guarda foto nem nome de tipo — usamos um
+    //     conjunto fixo de imagens de banco livre (Pexels) e um dicionário de
+    //     nome, indexados pela Capacidade (1=Suíte Standard, 2=Suíte Executivo,
+    //     3=Suíte Master), só para dar a moldura visual do card de cada tipo.
+    //     Cada foto foi escolhida por bater com a configuração de cama do tipo
+    //     (uma cama de solteiro / uma de casal / uma de casal + uma de
+    //     solteiro) — não são fotos reais dos quartos do hotel.
+    // EN: Apartamento has no photo or type-name field — we use a fixed set of
+    //     stock images (Pexels) and a name dictionary, keyed by Capacidade
+    //     (1=Standard Suite, 2=Executive Suite, 3=Master Suite), purely to give
+    //     each type card its visual frame. Each photo was picked to match that
+    //     type's actual bed setup (one single bed / one double bed / one
+    //     double + one single) — these aren't real photos of the hotel's rooms.
+    var fotoPorTipo = new Dictionary<int, string>
+    {
+        [1] = "https://images.pexels.com/photos/9899843/pexels-photo-9899843.jpeg?auto=compress&cs=tinysrgb&w=800",
+        [2] = "https://images.pexels.com/photos/30708768/pexels-photo-30708768.jpeg?auto=compress&cs=tinysrgb&w=800",
+        [3] = "https://images.pexels.com/photos/16153351/pexels-photo-16153351.jpeg?auto=compress&cs=tinysrgb&w=800",
+    };
+    var nomePorTipo = new Dictionary<int, string>
+    {
+        [1] = "Suíte Standard",
+        [2] = "Suíte Executivo",
+        [3] = "Suíte Master",
+    };
+
+    // PT: Comodidades reais do hotel, cada uma com uma foto de banco livre (Pexels)
+    //     escolhida pra bater com a comodidade de verdade — o estacionamento é um
+    //     quintal gramado, com canteiros separando as vagas (não um pátio de
+    //     asfalto genérico), então a foto buscada mostra um carro sobre piso
+    //     drenante/grama em vez de asfalto.
+    // EN: The hotel's real amenities, each with a stock photo (Pexels) chosen to
+    //     match the actual amenity — parking is a grassy yard, with garden beds
+    //     dividing the spots (not a generic paved lot), so the photo picked shows
+    //     a car on permeable/grass paving instead of asphalt.
+    var comodidades = new[]
+    {
+        ("https://images.pexels.com/photos/19033530/pexels-photo-19033530.jpeg?auto=compress&cs=tinysrgb&w=800", "Café da manhã regional incluso"),
+        ("https://images.pexels.com/photos/17004869/pexels-photo-17004869.jpeg?auto=compress&cs=tinysrgb&w=800", "Estacionamento privativo"),
+        ("https://images.pexels.com/photos/5481232/pexels-photo-5481232.jpeg?auto=compress&cs=tinysrgb&w=800", "Wi-Fi em todo o hotel"),
+    };
 }
 
 <div class="hero-hotel">
+    @* PT: Toca automaticamente se você colocar wwwroot/videos/hero.mp4 (veja o
+           README.md naquela pasta). Sem o arquivo, cai na foto de cachoeira de
+           fundo (definida em site.css) sem quebrar nada.
+       EN: Plays automatically once you add wwwroot/videos/hero.mp4 (see the
+           README.md in that folder). Without the file, it falls back to the
+           waterfall background photo (set in site.css) without breaking anything. *@
+    <video class="hero-video" autoplay muted loop playsinline>
+        <source src="~/videos/hero.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-overlay"></div>
     <div class="hero-content">
-        <p class="hero-eyebrow">Hotel Solaris</p>
-        <h1 class="hero-title">Sua estadia, do jeito que deveria ser.</h1>
-        <p class="hero-lead">Conforto, atenção aos detalhes e a hospitalidade que só um hotel de verdade oferece. Reserve online em poucos minutos.</p>
+        <h1 class="hero-title">Conforto e hospitalidade em cada detalhe.</h1>
+        <p class="hero-lead">Reserve sua estadia em poucos minutos e viva uma experiência pensada para o seu descanso.</p>
         <div class="hero-actions">
-            @{ var hospedeAuth = await Context.AuthenticateAsync(Esquemas.Hospede); }
-            @if (hospedeAuth.Succeeded)
-            {
-                <a class="btn btn-brass btn-lg" asp-controller="Reserva" asp-action="Create">Fazer uma Reserva</a>
-            }
-            else
-            {
-                <a class="btn btn-brass btn-lg" asp-controller="Cliente" asp-action="Registrar">Criar Conta e Reservar</a>
-                <a class="btn btn-outline-hero btn-lg" asp-controller="Cliente" asp-action="Login">Já sou hóspede</a>
-            }
+            @* PT: Um botão só — [RequerHospede] em ReservaController.Create já redireciona
+                   quem não está logado para /Cliente/Login (com ReturnUrl de volta pra cá),
+                   e a própria tela de login tem o link "Criar conta" pra quem é novo.
+               EN: Single button — [RequerHospede] on ReservaController.Create already
+                   redirects anyone not logged in to /Cliente/Login (with a ReturnUrl back
+                   here), and that login screen itself has the "Create account" link for
+                   new guests. *@
+            <a class="btn btn-brass btn-lg" asp-controller="Reserva" asp-action="Create">Reservar Agora</a>
         </div>
     </div>
 </div>
 
-<section class="mt-5">
+<section class="mt-5 pt-4">
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
             <p class="section-eyebrow">Acomodações</p>
-            <h2>Quartos disponíveis</h2>
+            <h2>Tipos de acomodação</h2>
         </div>
     </div>
 
     @if (!Model.Any())
     {
-        <p class="text-muted">No momento não há quartos disponíveis para reserva. Volte em breve.</p>
+        <p class="text-muted">No momento não há acomodações cadastradas.</p>
     }
     else
     {
         <div class="row g-4">
-            @foreach (var quarto in Model)
+            @foreach (var tipo in Model)
             {
+                var nome = nomePorTipo.TryGetValue(tipo.Capacidade, out var n) ? n : $"Até {tipo.Capacidade} hóspedes";
+                var foto = fotoPorTipo.TryGetValue(tipo.Capacidade, out var url) ? url : fotoPorTipo[1];
+
                 <div class="col-md-4">
                     <div class="room-card">
-                        <div class="room-card-header">
-                            <span class="room-number">Nº @quarto.Numero</span>
+                        <div class="room-card-header" style="background-image:url('@foto')">
+                            <span class="room-number">@nome</span>
                         </div>
                         <div class="room-card-body">
-                            <p class="room-capacity">Até @quarto.Capacidade hóspedes</p>
-                            <p class="room-price">@quarto.ValorDiaria.ToString("C") <span>/ noite</span></p>
+                            <p class="room-price">@tipo.ValorDiaria.ToString("C") <span>/ noite</span></p>
                         </div>
                     </div>
                 </div>
@@ -57,32 +108,19 @@
 </section>
 
 <section class="amenities mt-5">
-    <p class="section-eyebrow">Comodidades</p>
-    <h2 class="mb-4">Tudo pensado para você</h2>
-    <div class="row g-4">
-        <div class="col-md-3 col-6">
-            <div class="amenity-item">
-                <span class="amenity-icon">☕</span>
-                <p>Café da manhã incluso</p>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="amenity-item">
-                <span class="amenity-icon">🅿️</span>
-                <p>Vallet 24 horas</p>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="amenity-item">
-                <span class="amenity-icon">🧹</span>
-                <p>Limpeza diária</p>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="amenity-item">
-                <span class="amenity-icon">📶</span>
-                <p>Wi-Fi em todo o hotel</p>
-            </div>
+    <div class="container">
+        <p class="section-eyebrow">Comodidades</p>
+        <h2 class="mb-4">Tudo pensado para você</h2>
+        <div class="row g-4">
+            @foreach (var (foto, titulo) in comodidades)
+            {
+                <div class="col-md-4">
+                    <div class="amenity-item">
+                        <div class="amenity-photo" style="background-image:url('@foto')"></div>
+                        <p class="amenity-title">@titulo</p>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </section>
