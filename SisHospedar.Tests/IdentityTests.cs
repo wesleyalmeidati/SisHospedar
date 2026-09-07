@@ -77,7 +77,7 @@ public class IdentityTests : TestesIntegracaoBase
         var client = CriarCliente();
 
         await PostComAntiforgeryAsync(client, "/Conta/EsqueciSenha", "/Conta/EsqueciSenha",
-            new Dictionary<string, string> { ["login"] = login });
+            new Dictionary<string, string> { ["email"] = $"{login}@teste.local" });
 
         // PT: O link não aparece mais na resposta HTTP (ver ContaController) — vai
         //     por e-mail de verdade, capturado aqui pela FakeEmailSender registrada

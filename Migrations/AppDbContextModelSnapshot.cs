@@ -126,6 +126,10 @@ namespace SisHospedar.Migrations
 
                     b.HasKey("FuncionarioId");
 
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
+
                     b.HasIndex("HospedeId");
 
                     b.HasIndex("Login")
@@ -222,6 +226,10 @@ namespace SisHospedar.Migrations
 
                     b.HasIndex("Cpf")
                         .IsUnique();
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
 
                     b.HasIndex("Login")
                         .IsUnique()

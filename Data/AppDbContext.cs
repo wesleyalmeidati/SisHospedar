@@ -29,7 +29,15 @@ namespace SisHospedar.Data
         {
             modelBuilder.Entity<Hospede>().HasIndex(h => h.Cpf).IsUnique();
             modelBuilder.Entity<Hospede>().HasIndex(h => h.Login).IsUnique();
+            modelBuilder.Entity<Hospede>().HasIndex(h => h.Email).IsUnique();
             modelBuilder.Entity<Funcionario>().HasIndex(f => f.Login).IsUnique();
+            // PT: Únicos entre si (não entre as duas tabelas) — ver ContaController.EsqueciSenha,
+            //     que busca primeiro em Funcionario e só depois em Hospede caso o e-mail
+            //     também exista repetido nas duas identidades.
+            // EN: Unique within each table (not across the two) — see
+            //     ContaController.EsqueciSenha, which checks Funcionario first and only
+            //     falls back to Hospede if the same email also happens to exist in both.
+            modelBuilder.Entity<Funcionario>().HasIndex(f => f.Email).IsUnique();
             modelBuilder.Entity<Apartamento>().HasIndex(a => a.Numero).IsUnique();
 
             modelBuilder.Entity<Reserva>()
