@@ -1,0 +1,18 @@
+@{ ViewData["Title"] = "Redefinir senha"; }
+<div class="auth-shell">
+    <div class="auth-card">
+        <p class="auth-eyebrow">SisHospedar</p>
+        <h2 class="auth-title">Nova senha</h2>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <form asp-action="RedefinirSenha" method="post">
+            <input type="hidden" name="tipo" value="@ViewData["Tipo"]" />
+            <input type="hidden" name="id" value="@ViewData["Id"]" />
+            <input type="hidden" name="token" value="@ViewData["Token"]" />
+            <div class="mb-3">
+                <label class="form-label">Nova senha</label>
+                <input name="novaSenha" type="password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Redefinir senha</button>
+        </form>
+    </div>
+</div>

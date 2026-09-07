@@ -22,29 +22,30 @@ namespace SisHospedar.Controllers
     public class ClienteController : Controller
     {
         private readonly AppDbContext _context;
-        private readonly PasswordHasher<Hospede> _hasher = new();
+        private readonly UserManager<Hospede> _userManager;
         private readonly IAutenticacaoService _autenticacao;
 
-        public ClienteController(AppDbContext context, IAutenticacaoService autenticacao)
+        public ClienteController(AppDbContext context, UserManager<Hospede> userManager, IAutenticacaoService autenticacao)
         {
             _context = context;
+            _userManager = userManager;
             _autenticacao = autenticacao;
         }
 
         public IActionResult Registrar() => View();
 
-        // PT: Cria a conta do hóspede (senha em hash) e já assina o cookie dele,
-        //     encaminhando direto para criar a primeira reserva.
-        // EN: Creates the guest account (hashed password) and immediately signs in
-        //     their cookie, sending them straight to create their first booking.
+        // PT: Cria a conta do hóspede via UserManager<Hospede> (hash e persistência
+        //     ficam por conta do Identity, através de EntityUserStore) e já assina o
+        //     cookie dele, encaminhando direto para criar a primeira reserva.
+        // EN: Creates the guest account via UserManager<Hospede> (hashing and
+        //     persistence are handled by Identity, through EntityUserStore) and
+        //     immediately signs in their cookie, sending them straight to create
+        //     their first booking.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Registrar(Hospede hospede, string senha)
         {
             ModelState.Remove(nameof(Hospede.SenhaHash));
-
-            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6)
-                ModelState.AddModelError("senha", "A senha deve ter ao menos 6 caracteres.");
 
             if (await _context.Hospedes.AnyAsync(h => h.Login == hospede.Login))
                 ModelState.AddModelError("Login", "Este login já está em uso.");
@@ -61,14 +62,16 @@ namespace SisHospedar.Controllers
 
             if (ModelState.IsValid)
             {
-                hospede.SenhaHash = _hasher.HashPassword(hospede, senha);
-                _context.Add(hospede);
-                await _context.SaveChangesAsync();
+                var resultado = await _userManager.CreateAsync(hospede, senha);
+                if (resultado.Succeeded)
+                {
+                    await AssinarCookieAsync(hospede);
 
-                await AssinarCookieAsync(hospede);
-
-                TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao SisHospedar.";
-                return RedirectToAction("Create", "Reserva");
+                    TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao SisHospedar.";
+                    return RedirectToAction("Create", "Reserva");
+                }
+                foreach (var erro in resultado.Errors)
+                    ModelState.AddModelError("senha", erro.Description);
             }
             return View(hospede);
         }
@@ -83,12 +86,14 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string login, string senha)
         {
-            var tipo = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
+            var (resultado, tipo) = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
 
             if (tipo == TipoIdentidadeLogada.Hospede) return RedirectToAction(nameof(MinhaConta));
             if (tipo == TipoIdentidadeLogada.Funcionario) return RedirectToAction("Index", "Painel");
 
-            ModelState.AddModelError("", "Login ou senha inválidos.");
+            ModelState.AddModelError("", resultado == ResultadoLogin.ContaBloqueada
+                ? "Conta temporariamente bloqueada após várias tentativas inválidas. Tente novamente mais tarde ou redefina sua senha."
+                : "Login ou senha inválidos.");
             return View();
         }
 

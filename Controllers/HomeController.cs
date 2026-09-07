@@ -60,12 +60,14 @@ namespace SisHospedar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string login, string senha)
         {
-            var tipo = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
+            var (resultado, tipo) = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
 
             if (tipo == TipoIdentidadeLogada.Funcionario) return RedirectToAction("Index", "Painel");
             if (tipo == TipoIdentidadeLogada.Hospede) return RedirectToAction("MinhaConta", "Cliente");
 
-            ModelState.AddModelError("", "Login ou senha inválidos.");
+            ModelState.AddModelError("", resultado == ResultadoLogin.ContaBloqueada
+                ? "Conta temporariamente bloqueada após várias tentativas inválidas. Tente novamente mais tarde ou redefina sua senha."
+                : "Login ou senha inválidos.");
             return View();
         }
 

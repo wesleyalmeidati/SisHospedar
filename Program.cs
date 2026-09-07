@@ -31,6 +31,48 @@ builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 
 builder.Services.AddControllersWithViews();
 
+// PT: UserManager/SignInManager do ASP.NET Core Identity para as duas identidades,
+//     usando EntityUserStore<T> (ver Authentication/EntityUserStore.cs) em vez do
+//     UserStore pronto do EF Core — assim Funcionario/Hospede continuam sendo as
+//     mesmas classes de sempre (FuncionarioId/HospedeId/Login/SenhaHash), sem herdar
+//     de IdentityUser<T> e sem precisar de tabelas de apoio (UserClaims/UserRoles/
+//     UserTokens) duplicadas por identidade. AddIdentityCore (não AddIdentity nem
+//     AddDefaultIdentity) porque essas variantes tentam registrar cookie/esquema
+//     próprio — os dois AddCookie(...) abaixo continuam sendo os únicos esquemas de
+//     autenticação da aplicação; o Identity aqui só cuida de hash de senha, contagem
+//     de tentativas falhas/bloqueio e geração/validação de token de redefinição de
+//     senha (ver AutenticacaoService).
+// EN: ASP.NET Core Identity's UserManager/SignInManager for both identities, using
+//     EntityUserStore<T> (see Authentication/EntityUserStore.cs) instead of EF Core's
+//     ready-made UserStore — so Funcionario/Hospede stay the same classes they always
+//     were (FuncionarioId/HospedeId/Login/SenhaHash), with no IdentityUser<T>
+//     inheritance and no per-identity duplicate support tables (UserClaims/UserRoles/
+//     UserTokens). AddIdentityCore (not AddIdentity or AddDefaultIdentity) because
+//     those variants try to register their own cookie/scheme — the two AddCookie(...)
+//     calls below remain the app's only authentication schemes; Identity here only
+//     handles password hashing, failed-attempt counting/lockout, and password-reset
+//     token generation/validation (see AutenticacaoService).
+void ConfigurarIdentity(IdentityOptions options)
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+}
+
+builder.Services.AddIdentityCore<Funcionario>(ConfigurarIdentity)
+    .AddUserStore<EntityUserStore<Funcionario>>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddIdentityCore<Hospede>(ConfigurarIdentity)
+    .AddUserStore<EntityUserStore<Hospede>>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
 // PT: Dois esquemas de cookie de autenticação independentes — nenhum é "padrão"
 //     (ver Authentication/Esquemas.cs). Substituem a sessão manual: login vira
 //     HttpContext.SignInAsync(esquema, claims), logout vira SignOutAsync, e a
@@ -149,8 +191,22 @@ using (var scope = app.Services.CreateScope())
             new Funcionario { Nome = "Diego Fernandes", Cargo = CargoFuncionario.Vallet, Login = "diego.fernandes" },
         };
 
+        // PT: SecurityStamp precisa existir mesmo pra contas criadas fora do
+        //     UserManager (como este seed) — o Identity lança exceção ao validar um
+        //     usuário sem stamp (ex.: ao contar uma tentativa de login errada). Contas
+        //     criadas pelo fluxo normal (FuncionarioController.Create,
+        //     ClienteController.Registrar) já ganham o stamp automaticamente via
+        //     UserManager.CreateAsync.
+        // EN: SecurityStamp must exist even for accounts created outside UserManager
+        //     (like this seed) — Identity throws when validating a user with no stamp
+        //     (e.g. while counting a failed login attempt). Accounts created through
+        //     the normal flow (FuncionarioController.Create, ClienteController.Registrar)
+        //     already get their stamp automatically via UserManager.CreateAsync.
         foreach (var f in funcionariosTeste)
+        {
             f.SenhaHash = hasher.HashPassword(f, "Senha123");
+            f.SecurityStamp = Guid.NewGuid().ToString();
+        }
 
         db.Funcionarios.AddRange(funcionariosTeste);
     }

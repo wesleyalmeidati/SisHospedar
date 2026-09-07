@@ -14,7 +14,7 @@ Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 8)** com *
 - **Finalização de hospedagem** (checkout), conferindo os itens consumidos e liberando o apartamento automaticamente
 - **Login único**: a mesma tela identifica sozinha se as credenciais são de um funcionário ou de um hóspede e encaminha para a área certa — sem precisar escolher "sou funcionário" ou "sou hóspede" antes de entrar
 - Login de funcionário é **gerado automaticamente** a partir do nome (padrão `primeiro.sobrenome`, com resolução de colisão); só o hóspede escolhe o próprio login, no autocadastro
-- Autenticação com senha armazenada como **hash** (nunca em texto puro), via `PasswordHasher` do ASP.NET Core Identity
+- Autenticação com senha em **hash** (nunca em texto puro), bloqueio de conta após tentativas inválidas seguidas e **redefinição de senha** — tudo via `UserManager`/`SignInManager` do ASP.NET Core Identity de verdade
 - Portal do hóspede: cadastro, login, criação de reserva, acompanhamento da estadia/consumo e solicitação de encerramento pela própria conta
 - Interface própria (não é o Bootstrap padrão): design minimalista de inspiração editorial, com fotos reais compatíveis com cada tipo de acomodação e vídeo de fundo na home
 
@@ -49,7 +49,7 @@ Permite ao hóspede:
 | Backend | ASP.NET Core MVC (.NET 8) |
 | Acesso a dados | Entity Framework Core (SQL Server) |
 | Frontend | Razor Views + Bootstrap 5, com design system próprio (`wwwroot/css/site.css`) |
-| Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + `PasswordHasher` |
+| Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + ASP.NET Core Identity (`UserManager`/`SignInManager`, hash, lockout, reset de senha) |
 
 ## O que mudou em relação à versão original (2013)
 
@@ -151,14 +151,16 @@ SisHospedar/
 
 ## Próximos passos (roadmap)
 
-- [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento e confirmação de reserva
-- [x] Autenticação por cookie nativa do ASP.NET Core (dois esquemas independentes, um por identidade) no lugar de sessão manual — ainda não é o Identity "completo" (sem `UserManager`/reset de senha/lockout); ver CLAUDE.md para o motivo da escolha
+- [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento, confirmação de reserva, bloqueio de conta e redefinição de senha
+- [x] Autenticação por cookie nativa do ASP.NET Core (dois esquemas independentes, um por identidade) no lugar de sessão manual
 - [x] Login único com detecção automática de identidade (funcionário x hóspede) e geração automática de login de funcionário
 - [x] Prevenção de reserva duplicada (conflito de datas) e status `Reservado` no apartamento
 - [x] Redesign completo da interface (design system próprio, fora do Bootstrap padrão)
-- [ ] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — avaliado e adiado por ser uma mudança de escala bem maior (dois `IdentityUser` independentes exigiriam múltiplos `DbContext`s ou truques de "shared entity types")
+- [x] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — via uma store customizada (`EntityUserStore`, ver `CLAUDE.md`) em vez de herdar `IdentityUser<T>`, evitando a duplicação de tabelas de apoio que o caminho "óbvio" exigiria para duas identidades independentes; redefinição de senha em modo demonstração (mostra o link na tela em vez de enviar e-mail, já que o projeto não tem provedor de e-mail configurado)
+- [ ] E-mail de verdade para o link de redefinição de senha (trocar o modo demonstração por um `IEmailSender`)
 - [ ] Deploy em nuvem (Azure App Service)
 - [ ] API REST para consumo externo
+- [ ] Pagamento — via integração com um gateway de mercado (Stripe/Mercado Pago/PagSeguro), não implementação própria; deixado como última etapa de propósito, para não acoplar o modelo de domínio a isso antes de ele estar maduro
 
 ---
 

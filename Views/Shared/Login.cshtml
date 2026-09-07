@@ -24,7 +24,10 @@
                 <input name="senha" type="password" class="form-control" required />
             </div>
             <button type="submit" class="btn btn-primary w-100">Entrar</button>
-            <p class="text-center mt-4 mb-0" style="font-size:.88rem;">
+            <p class="text-center mt-3 mb-0" style="font-size:.85rem;">
+                <a asp-controller="Conta" asp-action="EsqueciSenha">Esqueci minha senha</a>
+            </p>
+            <p class="text-center mt-2 mb-0" style="font-size:.88rem;">
                 Ainda não tem conta? <a asp-controller="Cliente" asp-action="Registrar">Criar conta</a>
             </p>
         </form>
