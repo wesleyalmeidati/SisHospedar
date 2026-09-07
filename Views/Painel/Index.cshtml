@@ -5,7 +5,7 @@
 }
 
 <p class="section-eyebrow">Painel — @cargo</p>
-<h2>Olá, @Context.Session.GetString("FuncionarioNome")</h2>
+<h2>Olá, @User.FindFirstValue(ClaimTypes.Name)</h2>
 
 @if (cargo == CargoFuncionario.Administrador || cargo == CargoFuncionario.Gerente)
 {

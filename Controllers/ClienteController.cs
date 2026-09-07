@@ -1,15 +1,19 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SisHospedar.Authentication;
 using SisHospedar.Data;
+using SisHospedar.Filters;
 using SisHospedar.Models;
 
 namespace SisHospedar.Controllers
 {
-    // PT: Portal de autoatendimento do hóspede — login/sessão próprios
-    //     (Session["HospedeId"/"HospedeNome"]), independentes da sessão de funcionário.
-    // EN: Guest self-service portal — its own login/session
-    //     (Session["HospedeId"/"HospedeNome"]), independent from the employee session.
+    // PT: Portal de autoatendimento do hóspede — cookie de autenticação próprio
+    //     (esquema Esquemas.Hospede), independente do cookie de funcionário.
+    // EN: Guest self-service portal — its own authentication cookie
+    //     (Esquemas.Hospede scheme), independent from the employee cookie.
     public class ClienteController : Controller
     {
         private readonly AppDbContext _context;
@@ -19,10 +23,10 @@ namespace SisHospedar.Controllers
 
         public IActionResult Registrar() => View();
 
-        // PT: Cria a conta do hóspede (senha em hash) e já abre a sessão dele,
+        // PT: Cria a conta do hóspede (senha em hash) e já assina o cookie dele,
         //     encaminhando direto para criar a primeira reserva.
-        // EN: Creates the guest account (hashed password) and immediately opens
-        //     their session, sending them straight to create their first booking.
+        // EN: Creates the guest account (hashed password) and immediately signs in
+        //     their cookie, sending them straight to create their first booking.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Registrar(Hospede hospede, string senha)
@@ -51,8 +55,7 @@ namespace SisHospedar.Controllers
                 _context.Add(hospede);
                 await _context.SaveChangesAsync();
 
-                HttpContext.Session.SetInt32("HospedeId", hospede.HospedeId);
-                HttpContext.Session.SetString("HospedeNome", hospede.Nome);
+                await AssinarCookieAsync(hospede);
 
                 TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao Hotel Solaris.";
                 return RedirectToAction("Create", "Reserva");
@@ -71,8 +74,7 @@ namespace SisHospedar.Controllers
             if (hospede != null && !string.IsNullOrEmpty(hospede.SenhaHash) &&
                 _hasher.VerifyHashedPassword(hospede, hospede.SenhaHash, senha) == PasswordVerificationResult.Success)
             {
-                HttpContext.Session.SetInt32("HospedeId", hospede.HospedeId);
-                HttpContext.Session.SetString("HospedeNome", hospede.Nome);
+                await AssinarCookieAsync(hospede);
                 return RedirectToAction(nameof(MinhaConta));
             }
 
@@ -80,10 +82,9 @@ namespace SisHospedar.Controllers
             return View();
         }
 
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            HttpContext.Session.Remove("HospedeId");
-            HttpContext.Session.Remove("HospedeNome");
+            await HttpContext.SignOutAsync(Esquemas.Hospede);
             return RedirectToAction("Index", "Home");
         }
 
@@ -91,10 +92,10 @@ namespace SisHospedar.Controllers
         //     pendentes de confirmação pela recepção.
         // EN: The guest's account area — shows the active stay (with consumption) and
         //     any bookings still pending reception's confirmation.
+        [RequerHospede]
         public async Task<IActionResult> MinhaConta()
         {
-            var hospedeId = HttpContext.Session.GetInt32("HospedeId");
-            if (hospedeId == null) return RedirectToAction(nameof(Login));
+            var hospedeId = ObterHospedeId();
 
             var hospedagemAtiva = await _context.Hospedagens
                 .Include(h => h.Apartamento)
@@ -115,12 +116,12 @@ namespace SisHospedar.Controllers
         //     a ele, ainda esteja ativa e a nova data seja depois da entrada.
         // EN: Lets the guest extend their own stay, provided it belongs to them,
         //     is still active, and the new date is after check-in.
+        [RequerHospede]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Prorrogar(int hospedagemId, DateTime novaDataSaida)
         {
-            var hospedeId = HttpContext.Session.GetInt32("HospedeId");
-            if (hospedeId == null) return RedirectToAction(nameof(Login));
+            var hospedeId = ObterHospedeId();
 
             var hospedagem = await _context.Hospedagens
                 .FirstOrDefaultAsync(h => h.HospedagemId == hospedagemId && h.HospedeId == hospedeId);
@@ -138,12 +139,12 @@ namespace SisHospedar.Controllers
         //     fato finaliza a hospedagem é a recepção, em HospedagemController.
         // EN: The guest only flags the request (SolicitouEncerramento = true); reception
         //     is the one who actually finalizes the stay, in HospedagemController.
+        [RequerHospede]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SolicitarEncerramento(int hospedagemId)
         {
-            var hospedeId = HttpContext.Session.GetInt32("HospedeId");
-            if (hospedeId == null) return RedirectToAction(nameof(Login));
+            var hospedeId = ObterHospedeId();
 
             var hospedagem = await _context.Hospedagens
                 .FirstOrDefaultAsync(h => h.HospedagemId == hospedagemId && h.HospedeId == hospedeId);
@@ -156,5 +157,20 @@ namespace SisHospedar.Controllers
             }
             return RedirectToAction(nameof(MinhaConta));
         }
+
+        private async Task AssinarCookieAsync(Hospede hospede)
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, hospede.HospedeId.ToString()),
+                new(ClaimTypes.Name, hospede.Nome)
+            };
+            var identidade = new ClaimsIdentity(claims, Esquemas.Hospede);
+            await HttpContext.SignInAsync(Esquemas.Hospede, new ClaimsPrincipal(identidade));
+        }
+
+        // PT: [RequerHospede] já garante que a claim existe e é um int válido.
+        // EN: [RequerHospede] already guarantees the claim exists and is a valid int.
+        private int ObterHospedeId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     }
 }

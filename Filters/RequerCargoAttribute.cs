@@ -1,36 +1,26 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Authorization;
+using SisHospedar.Authentication;
 using SisHospedar.Models;
 
 namespace SisHospedar.Filters
 {
-    // PT: Além de exigir sessão de funcionário (herda RequerFuncionario), exige que o
-    //     Cargo esteja entre os informados; caso contrário, nega com 403. Substitui o
-    //     VerificarPermissao() que existia no FuncionarioController.
-    // EN: In addition to requiring an employee session (inherits RequerFuncionario),
-    //     requires the Cargo to be one of those given; otherwise denies with 403.
-    //     Replaces the VerificarPermissao() that used to live in FuncionarioController.
+    // PT: Atalho para [Authorize(AuthenticationSchemes = Esquemas.Funcionario, Roles = "...")]
+    //     — além do cookie de funcionário válido, exige que a claim de Role (preenchida
+    //     com o Cargo no login, ver HomeController.Login) seja uma das informadas.
+    //     Sem sessão -> redireciona (LoginPath). Logado mas cargo errado -> 403
+    //     (ver Events.OnRedirectToAccessDenied em Program.cs).
+    // EN: Shortcut for [Authorize(AuthenticationSchemes = Esquemas.Funcionario, Roles = "...")]
+    //     — besides a valid employee cookie, requires the Role claim (set to the Cargo
+    //     at login, see HomeController.Login) to be one of those given. No session ->
+    //     redirects (LoginPath). Logged in with the wrong role -> 403
+    //     (see Events.OnRedirectToAccessDenied in Program.cs).
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-    public class RequerCargoAttribute : RequerFuncionarioAttribute
+    public class RequerCargoAttribute : AuthorizeAttribute
     {
-        private readonly CargoFuncionario[] _cargos;
-
-        public RequerCargoAttribute(params CargoFuncionario[] cargos) => _cargos = cargos;
-
-        public override void OnAuthorization(AuthorizationFilterContext context)
+        public RequerCargoAttribute(params CargoFuncionario[] cargos)
         {
-            base.OnAuthorization(context);
-            if (context.Result != null) return; // já negado por falta de sessão
-
-            var cargo = context.HttpContext.Session.GetString("FuncionarioCargo");
-            if (!_cargos.Any(c => c.ToString() == cargo))
-            {
-                context.Result = new ObjectResult(
-                    $"Acesso negado: requer um dos cargos a seguir: {string.Join(", ", _cargos)}.")
-                {
-                    StatusCode = 403
-                };
-            }
+            AuthenticationSchemes = Esquemas.Funcionario;
+            Roles = string.Join(",", cargos);
         }
     }
 }

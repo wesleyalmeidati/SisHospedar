@@ -9,7 +9,8 @@
         <h1 class="hero-title">Sua estadia, do jeito que deveria ser.</h1>
         <p class="hero-lead">Conforto, atenção aos detalhes e a hospitalidade que só um hotel de verdade oferece. Reserve online em poucos minutos.</p>
         <div class="hero-actions">
-            @if (Context.Session.GetString("HospedeNome") != null)
+            @{ var hospedeAuth = await Context.AuthenticateAsync(Esquemas.Hospede); }
+            @if (hospedeAuth.Succeeded)
             {
                 <a class="btn btn-brass btn-lg" asp-controller="Reserva" asp-action="Create">Fazer uma Reserva</a>
             }

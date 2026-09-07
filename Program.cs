@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SisHospedar.Authentication;
 using SisHospedar.Data;
 using SisHospedar.Models;
 using SisHospedar.Services;
@@ -27,13 +29,45 @@ builder.Services.AddScoped<IConsumoService, ConsumoService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
+
+// PT: Dois esquemas de cookie de autenticação independentes — nenhum é "padrão"
+//     (ver Authentication/Esquemas.cs). Substituem a sessão manual: login vira
+//     HttpContext.SignInAsync(esquema, claims), logout vira SignOutAsync, e a
+//     proteção de rotas usa [Authorize]/[RequerFuncionario]/[RequerCargo] em vez de
+//     checar Session.GetInt32(...) manualmente em cada controller.
+// EN: Two independent cookie authentication schemes — neither is the "default"
+//     (see Authentication/Esquemas.cs). They replace manual session handling: login
+//     becomes HttpContext.SignInAsync(scheme, claims), logout becomes SignOutAsync,
+//     and route protection uses [Authorize]/[RequerFuncionario]/[RequerCargo] instead
+//     of manually checking Session.GetInt32(...) in every controller.
+builder.Services.AddAuthentication()
+    .AddCookie(Esquemas.Funcionario, options =>
+    {
+        options.LoginPath = "/Home/Login";
+        options.Cookie.Name = "SisHospedar.Funcionario";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+        // PT: Sem isso, o handler de cookie redireciona (302) pra uma AccessDeniedPath
+        //     que não existe quando o cargo é insuficiente. Um 403 puro é o
+        //     comportamento correto aqui (e o que os testes de autorização esperam).
+        // EN: Without this, the cookie handler redirects (302) to an AccessDeniedPath
+        //     that doesn't exist when the role is insufficient. A bare 403 is the
+        //     correct behavior here (and what the authorization tests expect).
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    })
+    .AddCookie(Esquemas.Hospede, options =>
+    {
+        options.LoginPath = "/Cliente/Login";
+        options.Cookie.Name = "SisHospedar.Hospede";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -115,7 +149,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

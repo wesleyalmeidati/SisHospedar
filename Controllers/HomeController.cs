@@ -1,6 +1,9 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SisHospedar.Authentication;
 using SisHospedar.Data;
 using SisHospedar.Models;
 
@@ -29,9 +32,11 @@ namespace SisHospedar.Controllers
         public IActionResult Login() => View();
 
         // PT: Verifica a senha com PasswordHasher (nunca compara texto puro) e, se válida,
-        //     abre a sessão de funcionário (Session["FuncionarioId"/"Nome"/"Cargo"]).
+        //     assina o cookie de autenticação do esquema Funcionario com as claims de
+        //     identidade (Id/Nome) e de Cargo (usada pelo [RequerCargo] via Roles).
         // EN: Verifies the password with PasswordHasher (never plain-text comparison) and,
-        //     if valid, opens the employee session (Session["FuncionarioId"/"Nome"/"Cargo"]).
+        //     if valid, signs in the Funcionario cookie scheme with identity claims
+        //     (Id/Nome) and the Cargo claim (used by [RequerCargo] via Roles).
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string login, string senha)
@@ -41,9 +46,14 @@ namespace SisHospedar.Controllers
             if (funcionario != null &&
                 _hasher.VerifyHashedPassword(funcionario, funcionario.SenhaHash, senha) == PasswordVerificationResult.Success)
             {
-                HttpContext.Session.SetInt32("FuncionarioId", funcionario.FuncionarioId);
-                HttpContext.Session.SetString("FuncionarioNome", funcionario.Nome);
-                HttpContext.Session.SetString("FuncionarioCargo", funcionario.Cargo.ToString());
+                var claims = new List<Claim>
+                {
+                    new(ClaimTypes.NameIdentifier, funcionario.FuncionarioId.ToString()),
+                    new(ClaimTypes.Name, funcionario.Nome),
+                    new(ClaimTypes.Role, funcionario.Cargo.ToString())
+                };
+                var identidade = new ClaimsIdentity(claims, Esquemas.Funcionario);
+                await HttpContext.SignInAsync(Esquemas.Funcionario, new ClaimsPrincipal(identidade));
                 return RedirectToAction("Index", "Painel");
             }
 
@@ -51,11 +61,10 @@ namespace SisHospedar.Controllers
             return View();
         }
 
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(Esquemas.Funcionario);
             return RedirectToAction(nameof(Index));
         }
     }
 }
-

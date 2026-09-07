@@ -27,8 +27,12 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
 
         var resposta = await client.GetAsync(rota);
 
+        // PT: O handler de cookie monta uma URL absoluta com ?ReturnUrl=... (nunca
+        //     existia antes com Session) — checamos só o caminho, não a query string.
+        // EN: The cookie handler builds an absolute URL with ?ReturnUrl=... (never
+        //     existed before with Session) — we only check the path, not the query string.
         Assert.Equal(HttpStatusCode.Redirect, resposta.StatusCode);
-        Assert.Equal("/Home/Login", resposta.Headers.Location?.OriginalString);
+        Assert.Equal("/Home/Login", resposta.Headers.Location?.AbsolutePath);
     }
 
     [Fact]
@@ -86,6 +90,6 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
         var resposta = await client.GetAsync("/Reserva/Create");
 
         Assert.Equal(HttpStatusCode.Redirect, resposta.StatusCode);
-        Assert.Equal("/Cliente/Login", resposta.Headers.Location?.OriginalString);
+        Assert.Equal("/Cliente/Login", resposta.Headers.Location?.AbsolutePath);
     }
 }

@@ -44,7 +44,7 @@ Acesso via `/Cliente/Login` (conta separada da de funcionário). Permite ao hós
 | Backend | ASP.NET Core MVC (.NET 8) |
 | Acesso a dados | Entity Framework Core (SQL Server) |
 | Frontend | Razor Views + Bootstrap 5 |
-| Autenticação | ASP.NET Core `PasswordHasher` (hash de senha) |
+| Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + `PasswordHasher` |
 
 ## O que mudou em relação à versão original (2013)
 
@@ -140,7 +140,8 @@ SisHospedar/
 ## Próximos passos (roadmap)
 
 - [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento e confirmação de reserva
-- [ ] Migração de autenticação para ASP.NET Core Identity completo
+- [x] Autenticação por cookie nativa do ASP.NET Core (dois esquemas independentes, um por identidade) no lugar de sessão manual — ainda não é o Identity "completo" (sem `UserManager`/reset de senha/lockout); ver CLAUDE.md para o motivo da escolha
+- [ ] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — avaliado e adiado por ser uma mudança de escala bem maior (dois `IdentityUser` independentes exigiriam múltiplos `DbContext`s ou truques de "shared entity types")
 - [ ] Deploy em nuvem (Azure App Service)
 - [ ] API REST para consumo externo
 

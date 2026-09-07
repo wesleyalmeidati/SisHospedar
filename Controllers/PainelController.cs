@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
@@ -18,7 +19,9 @@ namespace SisHospedar.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var funcionarioId = HttpContext.Session.GetInt32("FuncionarioId");
+            // PT: [RequerFuncionario] já garante que a claim existe e é um int válido.
+            // EN: [RequerFuncionario] already guarantees the claim exists and is a valid int.
+            var funcionarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var funcionario = await _context.Funcionarios.FindAsync(funcionarioId);
             if (funcionario == null) return RedirectToAction("Login", "Home");
 

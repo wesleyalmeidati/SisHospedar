@@ -16,8 +16,20 @@
             </button>
             <div class="collapse navbar-collapse" id="nav">
                 @{
-                    var funcionarioNome = Context.Session.GetString("FuncionarioNome");
-                    var hospedeNome = Context.Session.GetString("HospedeNome");
+                    // PT: Nenhum dos dois esquemas é "padrão", então checamos os dois
+                    //     cookies explicitamente — é assim que a navbar sabe qual dos
+                    //     dois (ou nenhum) está logado em qualquer página, mesmo as
+                    //     públicas sem [Authorize].
+                    // EN: Neither scheme is "default", so we check both cookies
+                    //     explicitly — this is how the navbar knows which of the two
+                    //     (or neither) is logged in on any page, even public ones
+                    //     with no [Authorize].
+                    var funcionarioAuth = await Context.AuthenticateAsync(Esquemas.Funcionario);
+                    var hospedeAuth = await Context.AuthenticateAsync(Esquemas.Hospede);
+                    var funcionarioNome = funcionarioAuth.Succeeded
+                        ? funcionarioAuth.Principal!.FindFirstValue(ClaimTypes.Name) : null;
+                    var hospedeNome = hospedeAuth.Succeeded
+                        ? hospedeAuth.Principal!.FindFirstValue(ClaimTypes.Name) : null;
                 }
 
                 @if (funcionarioNome != null)

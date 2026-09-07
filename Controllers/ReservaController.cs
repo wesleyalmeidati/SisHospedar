@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -30,11 +31,9 @@ namespace SisHospedar.Controllers
         }
 
         // ---- Área do CLIENTE: criar pedido de reserva ----
+        [RequerHospede]
         public IActionResult Create()
         {
-            var hospedeId = HttpContext.Session.GetInt32("HospedeId");
-            if (hospedeId == null) return RedirectToAction("Login", "Cliente");
-
             ViewData["ApartamentoId"] = new SelectList(
                 _context.Apartamentos.Where(a => a.Status == StatusApartamento.Disponivel).OrderBy(a => a.Numero),
                 "ApartamentoId", "Numero");
@@ -46,14 +45,12 @@ namespace SisHospedar.Controllers
         //     disponibilidade do apartamento acontecem dentro do service.
         // EN: Creates the booking as Pendente. Date validation and room availability
         //     re-validation happen inside the service.
+        [RequerHospede]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ApartamentoId,DataEntrada,DataSaidaPrevista")] Reserva reserva)
         {
-            var hospedeId = HttpContext.Session.GetInt32("HospedeId");
-            if (hospedeId == null) return RedirectToAction("Login", "Cliente");
-
-            reserva.HospedeId = hospedeId.Value;
+            reserva.HospedeId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             if (ModelState.IsValid)
             {
