@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,23 @@ using SisHospedar.Authentication;
 using SisHospedar.Data;
 using SisHospedar.Models;
 using SisHospedar.Services;
+
+// PT: Sem isso, ValorDiaria.ToString("C")/Preco.ToString("C") (usado em ~12 lugares
+//     nas Views) formata usando a cultura do SO em vez de pt-BR — no Windows local
+//     normalmente já sai "R$" porque o SO está configurado em pt-BR, mas no container
+//     Linux de produção (sem locale pt-BR configurada) sai "¤" (símbolo genérico de
+//     moeda do .NET quando não sabe qual usar). Setar aqui, uma vez, corrige "C" em
+//     toda a aplicação sem precisar passar a cultura em cada ToString("C") individual.
+// EN: Without this, ValorDiaria.ToString("C")/Preco.ToString("C") (used in ~12 places
+//     across the Views) formats using the OS's culture instead of pt-BR — on local
+//     Windows it usually already shows "R$" because the OS is set to pt-BR, but on
+//     the production Linux container (no pt-BR locale configured) it shows "¤" (.NET's
+//     generic currency placeholder when it doesn't know which one to use). Setting
+//     this once here fixes "C" formatting across the whole app without having to pass
+//     the culture to every individual ToString("C") call.
+var culturaPadrao = new CultureInfo("pt-BR");
+CultureInfo.DefaultThreadCurrentCulture = culturaPadrao;
+CultureInfo.DefaultThreadCurrentUICulture = culturaPadrao;
 
 var builder = WebApplication.CreateBuilder(args);
 

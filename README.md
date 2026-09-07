@@ -138,8 +138,10 @@ Motivo de Container Apps em vez de App Service: a assinatura usada não tinha co
 docker build -t wesleysales/sishospedar:latest .
 docker push wesleysales/sishospedar:latest
 
-az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:latest
+az containerapp update --name sishospedar --resource-group rg-sishospedar --image wesleysales/sishospedar:latest --revision-suffix "fix$(date +%H%M%S)"
 ```
+
+**Atenção à tag `:latest`**: o Container Apps só cria uma revisão nova quando a *string* de imagem muda — como a tag continua `:latest` em todo redeploy, ele não percebe que o conteúdo da imagem mudou e o `update` vira um no-op silencioso (o site continua servindo a revisão antiga). É por isso que `--revision-suffix` (qualquer valor único, tipo um timestamp) é obrigatório em todo redeploy, não opcional — sem ele, `az containerapp update --image` pode "ter sucesso" sem publicar nada de novo. Depois de confirmar que a revisão nova está no ar (`az containerapp revision list --name sishospedar --resource-group rg-sishospedar -o table`), desative a antiga: `az containerapp revision deactivate --name sishospedar --resource-group rg-sishospedar --revision <nome-da-revisao-antiga>`.
 
 Se uma migration nova foi criada, aplique contra o banco de produção antes do redeploy (substitua a senha pela guardada com você, nunca commitada):
 
