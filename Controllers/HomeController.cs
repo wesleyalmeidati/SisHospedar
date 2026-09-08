@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Authentication;
 using SisHospedar.Data;
@@ -58,6 +59,7 @@ namespace SisHospedar.Controllers
         //     just a consequence of that.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("AutenticacaoPublica")]
         public async Task<IActionResult> Login(string login, string senha)
         {
             var (resultado, tipo) = await _autenticacao.AutenticarAsync(HttpContext, login, senha);

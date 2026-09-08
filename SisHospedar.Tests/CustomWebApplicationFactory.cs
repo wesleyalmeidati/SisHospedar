@@ -49,6 +49,16 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable(
             "ConnectionStrings__DefaultConnection",
             "Server=(test);Database=SisHospedarTest;Trusted_Connection=True;");
+
+        // PT: Ver o comentário em Program.cs, perto de "app.UseRateLimiter()" — sem
+        //     isso, a soma de POSTs em endpoints públicos ao longo de toda a suíte
+        //     estouraria o limite por IP (pensado para uso real) e causaria 429
+        //     inesperados, sem relação com o comportamento que cada teste verifica.
+        // EN: See the comment in Program.cs, near "app.UseRateLimiter()" — without
+        //     this, the sum of POSTs to public endpoints across the whole suite
+        //     would blow past the per-IP limit (designed for real-world use) and
+        //     cause unexpected 429s, unrelated to the behavior each test checks.
+        Environment.SetEnvironmentVariable("DesativarRateLimiting", "true");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

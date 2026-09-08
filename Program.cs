@@ -1,6 +1,8 @@
 using System.Globalization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Authentication;
 using SisHospedar.Data;
@@ -142,6 +144,55 @@ builder.Services.AddAuthentication()
 
 builder.Services.AddAuthorization();
 
+// PT: Limite de tentativas por IP nos formulários públicos mais visados (login,
+//     registro, esqueci senha) — usa o middleware nativo do ASP.NET Core
+//     (System.Threading.RateLimiting), sem serviço externo e sem custo. Isso é
+//     complementar ao lockout por conta do Identity (ConfigurarIdentity acima):
+//     o lockout trava UMA conta específica após tentativas erradas nela, mas não
+//     impede alguém de varrer várias contas diferentes a partir do mesmo IP — é
+//     exatamente essa lacuna que o rate limiting por IP fecha.
+// EN: Per-IP attempt limit on the most-targeted public forms (login, registration,
+//     forgot password) — uses ASP.NET Core's built-in middleware
+//     (System.Threading.RateLimiting), no external service, no cost. This is
+//     complementary to Identity's per-account lockout (ConfigurarIdentity above):
+//     lockout locks ONE specific account after bad attempts against it, but
+//     doesn't stop someone from sweeping many different accounts from the same
+//     IP — that's exactly the gap per-IP rate limiting closes.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+        await context.HttpContext.Response.WriteAsync(
+            "Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.", ct);
+    };
+
+    static string ChaveIp(HttpContext http) => http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+
+    // PT: Login e "esqueci minha senha" — 10 tentativas a cada 5 minutos por IP.
+    // EN: Login and "forgot password" — 10 attempts every 5 minutes per IP.
+    options.AddPolicy("AutenticacaoPublica", http => RateLimitPartition.GetFixedWindowLimiter(
+        ChaveIp(http), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0
+        }));
+
+    // PT: Cadastro de hóspede — 5 contas a cada 1 hora por IP, contra spam de
+    //     registro automatizado.
+    // EN: Guest registration — 5 accounts per hour per IP, against automated
+    //     registration spam.
+    options.AddPolicy("CadastroPublico", http => RateLimitPartition.GetFixedWindowLimiter(
+        ChaveIp(http), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromHours(1),
+            QueueLimit = 0
+        }));
+});
+
 var app = builder.Build();
 
 // PT: Popula o banco com dados de teste na primeira vez que rodar
@@ -255,6 +306,22 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// PT: Desativado só nos testes de integração (ver CustomWebApplicationFactory) —
+//     com 24 testes reaproveitando o mesmo host de teste (IClassFixture), várias
+//     dezenas de POSTs em /Home/Login, /Cliente/Login, /Cliente/Registrar e
+//     /Conta/EsqueciSenha ao longo da suíte esbarrariam num limite pensado para
+//     uso real (por IP, minutos), gerando falhas 429 sem relação com o que cada
+//     teste realmente verifica. Em produção, a variável nunca é definida e o
+//     rate limiting continua ativo normalmente.
+// EN: Disabled only for integration tests (see CustomWebApplicationFactory) —
+//     with 24 tests reusing the same test host (IClassFixture), dozens of POSTs
+//     to /Home/Login, /Cliente/Login, /Cliente/Registrar and /Conta/EsqueciSenha
+//     across the suite would hit a limit designed for real-world use (per IP,
+//     minutes), causing 429 failures unrelated to what each test actually
+//     checks. In production, the variable is never set and rate limiting stays
+//     active normally.
+if (app.Configuration["DesativarRateLimiting"] != "true") app.UseRateLimiter();
 
 app.MapControllerRoute(
     name: "default",

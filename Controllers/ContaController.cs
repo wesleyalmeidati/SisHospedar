@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
 using SisHospedar.Models;
@@ -50,6 +51,7 @@ namespace SisHospedar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("AutenticacaoPublica")]
         public async Task<IActionResult> EsqueciSenha(string email)
         {
             if (string.IsNullOrWhiteSpace(email)) return View("EsqueciSenhaConfirmacao");
