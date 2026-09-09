@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SisHospedar is a hotel management system (ASP.NET Core MVC, .NET 8, EF Core, SQL Server, Razor + Bootstrap 5). It's a modernization of a .NET Framework/Web Forms/ADO.NET TCC project — the rewrite's explicit goals were removing the hardcoded connection string, hashing employee/guest passwords, and replacing manual ADO.NET DAOs with EF Core. Keep those goals in mind: don't reintroduce plaintext secrets/passwords or hand-rolled SQL.
 
+## Project scope and status
+
+Considered feature-complete for what it set out to do: modernize the 2013 TCC with a current architecture (EF Core, real ASP.NET Core Identity, automated tests, cloud deploy with CI/CD) and fix the original's security problems (plaintext passwords, hardcoded connection string, hand-rolled SQL). Two things are deliberately **out of scope, not deferred** — don't propose or implement either unless the user explicitly reopens the question:
+
+- **Payment processing.** This is a learning project with no commercialization intent. A real gateway integration (Stripe/Mercado Pago/PagSeguro) would add compliance and security surface (card data, chargebacks) disproportionate to what the project demonstrates, without teaching anything the rest of the stack hasn't already covered.
+- **A REST API.** The app already covers its own needs through MVC; there's no real external consumer (a mobile app, a third-party integration) that would justify one today.
+
+New feature work in this repo should generally be maintenance, polish, or something the user explicitly asks for — not organic expansion toward either of the above.
+
 ## Commands
 
 ```bash
@@ -34,7 +43,7 @@ xUnit integration tests using `WebApplicationFactory<Program>` — boots the rea
 
 `SisHospedar.Tests` lives as a subfolder of the main project's directory (not a sibling) — `Microsoft.NET.Sdk.Web`'s default `**/*.cs` glob would otherwise try to compile it into the web project too, so `SisHospedar.csproj` explicitly excludes it (`<Compile Remove="SisHospedar.Tests/**/*.cs" />`). `Program.cs` ends with `public partial class Program { }` so the test project can reference it — top-level-statement `Program` is `internal` by default, and that's a hard C# accessibility-domain rule that plain `InternalsVisibleTo` does not work around for generic base classes like `WebApplicationFactory<Program>`.
 
-Coverage: `AutorizacaoFuncionarioTests` (anonymous access redirects, wrong `Cargo` gets 403, guest vs. employee identity separation) and business-logic tests — `ConsumoTests` (stock deduction, insufficient-stock rejection, rejecting consumption on a finalized stay), `HospedagemStatusTests` (check-in occupies the room, check-out frees it), `ReservaConfirmarTests` (confirming a booking creates the `Hospedagem` and occupies the room, or fails gracefully if the room is no longer free), `IdentityTests` (account lockout after repeated invalid attempts, and the full password-reset round trip through `/Conta/EsqueciSenha` → `/Conta/RedefinirSenha`). Shared HTTP/login/antiforgery helpers live in `TestesIntegracaoBase`. Writing `HospedagemStatusTests.FinalizarConfirmado_LiberaApartamento` caught a real, pre-existing bug: `Views/Hospedagem/Finalizar.cshtml`'s form posted a `HospedagemId` field while the action expected a route parameter named `id` (no `asp-route-id`), so the "Confirmar Finalização" button always 404'd in the real app — fixed by adding `asp-route-id="@Model.HospedagemId"` to the form.
+Coverage: `AutorizacaoFuncionarioTests` (anonymous access redirects, wrong `Cargo` gets 403, guest vs. employee identity separation) and business-logic tests — `ConsumoTests` (stock deduction, insufficient-stock rejection, rejecting consumption on a finalized stay), `HospedagemStatusTests` (check-in occupies the room, check-out frees it), `ReservaConfirmarTests` (confirming a booking creates the `Hospedagem` and occupies the room, or fails gracefully if the room is no longer free), `IdentityTests` (account lockout after repeated invalid attempts, and the full password-reset round trip through `/Conta/EsqueciSenha` → `/Conta/RedefinirSenha`), `RegistroHospedeTests` (real CPF check-digit validation rejecting both a wrong check digit and an all-same-digit sequence, and the Login/Email required-field errors that only apply to self-registration). Shared HTTP/login/antiforgery helpers live in `TestesIntegracaoBase`. Writing `HospedagemStatusTests.FinalizarConfirmado_LiberaApartamento` caught a real, pre-existing bug: `Views/Hospedagem/Finalizar.cshtml`'s form posted a `HospedagemId` field while the action expected a route parameter named `id` (no `asp-route-id`), so the "Confirmar Finalização" button always 404'd in the real app — fixed by adding `asp-route-id="@Model.HospedagemId"` to the form.
 
 ### CI (`.github/workflows/ci.yml`)
 

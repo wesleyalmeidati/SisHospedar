@@ -204,7 +204,7 @@ SisHospedar/
 
 ## Próximos passos (roadmap)
 
-- [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento, confirmação de reserva, bloqueio de conta e redefinição de senha
+- [x] Testes automatizados (xUnit) — autorização, baixa de estoque, transições de status de apartamento, confirmação de reserva, bloqueio de conta, redefinição de senha e validação do autocadastro (28 testes ao todo)
 - [x] Autenticação por cookie nativa do ASP.NET Core (dois esquemas independentes, um por identidade) no lugar de sessão manual
 - [x] Login único com detecção automática de identidade (funcionário x hóspede) e geração automática de login de funcionário
 - [x] Prevenção de reserva duplicada (conflito de datas) e status `Reservado` no apartamento
@@ -213,8 +213,15 @@ SisHospedar/
 - [x] Deploy em nuvem — Docker + Docker Hub + Azure Container Apps + Azure SQL Database (ver seção [Deploy](#deploy)); link no topo deste README
 - [x] E-mail de verdade para o link de redefinição de senha — `IEmailSender`/`SmtpEmailSender` via Gmail (ver seção [E-mail](#e-mail))
 - [x] CI/CD automatizado — build + testes + push + `containerapp update` a cada push em `main` (ver `.github/workflows/ci.yml`), tagueando a imagem com o SHA do commit em vez de `:latest`
-- [ ] API REST para consumo externo
-- [ ] Pagamento — via integração com um gateway de mercado (Stripe/Mercado Pago/PagSeguro), não implementação própria; deixado como última etapa de propósito, para não acoplar o modelo de domínio a isso antes de ele estar maduro
+- [x] Rate limiting por IP em login, registro e "esqueci minha senha" (`Microsoft.AspNetCore.RateLimiting`, nativo do ASP.NET Core, sem custo) — complementa o lockout por conta do Identity, que trava uma conta específica mas não impede alguém de varrer várias contas diferentes a partir do mesmo IP
+- [x] Validação real de CPF (dígito verificador via módulo 11, não só formato) e campos obrigatórios no autocadastro do hóspede
+
+### Escopo final
+
+Este projeto está considerado completo para o que se propôs: modernizar o TCC de 2013, corrigindo os problemas de segurança da versão original (senha em texto puro, string de conexão fixa no código, SQL manual) e reconstruindo com arquitetura atual — EF Core, ASP.NET Core Identity de verdade, testes automatizados, deploy em nuvem com CI/CD. Dois itens ficaram de fora por decisão, não por falta de tempo:
+
+- **Pagamento**: não vai ser implementado. É um projeto de aprendizado, sem intenção de comercialização — integrar um gateway de verdade (Stripe/Mercado Pago/PagSeguro) traria responsabilidades (dados de cartão, estornos, compliance) desproporcionais ao que o projeto se propõe a demonstrar, sem agregar aprendizado que o resto do stack já não cubra.
+- **API REST**: fica como ideia em aberto, não como próximo passo planejado — o sistema já atende suas próprias necessidades via MVC; uma API só faria sentido diante de um consumidor externo de verdade (app mobile, integração de terceiros), que não existe hoje.
 
 ---
 
