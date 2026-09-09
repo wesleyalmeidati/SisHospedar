@@ -49,18 +49,52 @@ namespace SisHospedar.Controllers
         {
             ModelState.Remove(nameof(Hospede.SenhaHash));
 
-            if (await _context.Hospedes.AnyAsync(h => h.Login == hospede.Login))
-                ModelState.AddModelError("Login", "Este login já está em uso.");
+            // PT: Email e Login são [Required] só aqui, não no model (Hospede) — a
+            //     mesma classe também representa hóspedes cadastrados pela recepção
+            //     no balcão (HospedeController.Create), sem login/e-mail próprios, e
+            //     um [Required] no model quebraria esse fluxo. Autocadastro é o único
+            //     lugar onde os dois são obrigatórios: sem login/senha não tem como
+            //     essa conta entrar depois, e sem e-mail não tem como redefinir senha
+            //     se esquecer (ver ContaController.EsqueciSenha).
+            // EN: Email and Login are [Required] only here, not on the model
+            //     (Hospede) — the same class also represents guests registered by
+            //     reception at the counter (HospedeController.Create), with no
+            //     login/email of their own, and a model-level [Required] would break
+            //     that flow. Self-registration is the only place where both are
+            //     mandatory: with no login/password there's no way back into this
+            //     account, and with no email there's no way to reset the password if
+            //     forgotten (see ContaController.EsqueciSenha).
+            if (string.IsNullOrWhiteSpace(hospede.Login))
+                ModelState.AddModelError(nameof(Hospede.Login), "O login é obrigatório.");
+            if (string.IsNullOrWhiteSpace(hospede.Email))
+                ModelState.AddModelError(nameof(Hospede.Email), "O e-mail é obrigatório.");
 
-            // PT: Login também não pode colidir com o de um funcionário — as duas
-            //     identidades são independentes, mas compartilham o mesmo "namespace" de login.
-            // EN: Login also can't collide with an employee's — the two identities are
-            //     independent, but share the same login "namespace".
-            if (await _context.Funcionarios.AnyAsync(f => f.Login == hospede.Login))
-                ModelState.AddModelError("Login", "Este login já está em uso.");
+            if (!string.IsNullOrWhiteSpace(hospede.Login))
+            {
+                if (await _context.Hospedes.AnyAsync(h => h.Login == hospede.Login))
+                    ModelState.AddModelError(nameof(Hospede.Login), "Este login já está em uso.");
+
+                // PT: Login também não pode colidir com o de um funcionário — as duas
+                //     identidades são independentes, mas compartilham o mesmo "namespace" de login.
+                // EN: Login also can't collide with an employee's — the two identities are
+                //     independent, but share the same login "namespace".
+                if (await _context.Funcionarios.AnyAsync(f => f.Login == hospede.Login))
+                    ModelState.AddModelError(nameof(Hospede.Login), "Este login já está em uso.");
+            }
+
+            // PT: E-mail tem índice único no banco (ver AppDbContext) porque também é
+            //     a chave de busca do "esqueci minha senha" — sem checar aqui antes,
+            //     um e-mail repetido só falharia lá na frente com uma exceção crua do
+            //     SQL Server ao salvar, em vez de um erro de formulário legível.
+            // EN: Email has a unique index in the database (see AppDbContext) since
+            //     it's also the lookup key for "forgot my password" — without
+            //     checking here first, a repeated email would only fail later with a
+            //     raw SQL Server exception on save, instead of a readable form error.
+            if (!string.IsNullOrWhiteSpace(hospede.Email) && await _context.Hospedes.AnyAsync(h => h.Email == hospede.Email))
+                ModelState.AddModelError(nameof(Hospede.Email), "Já existe uma conta com este e-mail.");
 
             if (await _context.Hospedes.AnyAsync(h => h.Cpf == hospede.Cpf))
-                ModelState.AddModelError("Cpf", "Já existe uma conta com este CPF.");
+                ModelState.AddModelError(nameof(Hospede.Cpf), "Já existe uma conta com este CPF.");
 
             if (ModelState.IsValid)
             {

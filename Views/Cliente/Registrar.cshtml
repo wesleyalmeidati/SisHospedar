@@ -5,34 +5,51 @@
         <p class="auth-eyebrow">SisHospedar</p>
         <h2 class="auth-title">Criar sua conta</h2>
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @* PT: "required" no HTML é só uma trava de conveniência no navegador (o projeto
+               não carrega jQuery/validação client-side) — quem realmente decide se o
+               cadastro passa é o ModelState no servidor (ver ClienteController.Registrar
+               e CpfValidoAttribute em Models/Hospede.cs). Nunca confie só no atributo
+               HTML: dá pra contornar desligando JS ou postando direto pra rota.
+           EN: "required" in the HTML is just a browser convenience guard (this project
+               doesn't load jQuery/client-side validation) — what actually decides
+               whether registration passes is server-side ModelState (see
+               ClienteController.Registrar and CpfValidoAttribute in Models/Hospede.cs).
+               Never rely on the HTML attribute alone: it's trivially bypassed by
+               disabling JS or posting straight to the route. *@
         <form asp-action="Registrar" method="post">
             <div class="mb-3">
                 <label asp-for="Nome" class="form-label"></label>
-                <input asp-for="Nome" class="form-control" />
+                <input asp-for="Nome" class="form-control" required />
+                <span asp-validation-for="Nome" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Cpf" class="form-label"></label>
-                <input asp-for="Cpf" class="form-control" />
+                <input asp-for="Cpf" class="form-control" placeholder="000.000.000-00" required />
+                <span asp-validation-for="Cpf" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" type="email" />
+                <input asp-for="Email" class="form-control" type="email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Telefone" class="form-label"></label>
-                <input asp-for="Telefone" class="form-control" />
+                <input asp-for="Telefone" class="form-control" required />
+                <span asp-validation-for="Telefone" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="DataNascimento" class="form-label"></label>
-                <input asp-for="DataNascimento" class="form-control" type="date" />
+                <input asp-for="DataNascimento" class="form-control" type="date" required />
+                <span asp-validation-for="DataNascimento" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Login" class="form-label"></label>
-                <input asp-for="Login" class="form-control" />
+                <input asp-for="Login" class="form-control" required />
+                <span asp-validation-for="Login" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label class="form-label">Senha</label>
-                <input name="senha" type="password" class="form-control" />
+                <input name="senha" type="password" class="form-control" required />
             </div>
             <button type="submit" class="btn btn-primary w-100">Criar Conta</button>
             <p class="text-center mt-4 mb-0" style="font-size:.88rem;">

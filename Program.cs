@@ -205,13 +205,27 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Hospedes.Any())
     {
+        // PT: Dígitos verificadores calculados de verdade (algoritmo módulo 11, ver
+        //     CpfValidoAttribute) — não são CPFs reais de ninguém, só números
+        //     sintéticos que passam no mesmo cálculo que a validação nova exige.
+        //     Precisou trocar porque os valores antigos (terminados em -01, -12...)
+        //     eram só um padrão sequencial que nunca seria um CPF válido de verdade;
+        //     com o CpfValidoAttribute agora aplicado em Hospede.Cpf, editar um
+        //     desses hóspedes sem tocar no CPF passaria a falhar a validação no re-save.
+        // EN: Real, calculated check digits (modulo-11 algorithm, see
+        //     CpfValidoAttribute) — not anyone's real CPF, just synthetic numbers
+        //     that pass the same math the new validation requires. Had to change
+        //     because the old values (ending in -01, -12...) were just a sequential
+        //     pattern that could never be a genuinely valid CPF; with
+        //     CpfValidoAttribute now applied to Hospede.Cpf, editing one of these
+        //     guests without touching the CPF would start failing validation on re-save.
         db.Hospedes.AddRange(
-            new Hospede { Nome = "Ana Beatriz Souza", Cpf = "123.456.789-01", Telefone = "(41) 99111-2233", DataNascimento = new DateTime(1990, 3, 14) },
-            new Hospede { Nome = "Carlos Eduardo Lima", Cpf = "234.567.890-12", Telefone = "(41) 98222-3344", DataNascimento = new DateTime(1985, 7, 22) },
-            new Hospede { Nome = "Fernanda Alves Costa", Cpf = "345.678.901-23", Telefone = "(41) 97333-4455", DataNascimento = new DateTime(1993, 11, 5) },
-            new Hospede { Nome = "Gustavo Ribeiro Santos", Cpf = "456.789.012-34", Telefone = "(41) 96444-5566", DataNascimento = new DateTime(1988, 1, 30) },
-            new Hospede { Nome = "Juliana Pereira Rocha", Cpf = "567.890.123-45", Telefone = "(41) 95555-6677", DataNascimento = new DateTime(1995, 9, 18) },
-            new Hospede { Nome = "Marcelo Henrique Dias", Cpf = "678.901.234-56", Telefone = "(41) 94666-7788", DataNascimento = new DateTime(1979, 5, 2) }
+            new Hospede { Nome = "Ana Beatriz Souza", Cpf = "123.456.789-09", Telefone = "(41) 99111-2233", DataNascimento = new DateTime(1990, 3, 14) },
+            new Hospede { Nome = "Carlos Eduardo Lima", Cpf = "234.567.890-92", Telefone = "(41) 98222-3344", DataNascimento = new DateTime(1985, 7, 22) },
+            new Hospede { Nome = "Fernanda Alves Costa", Cpf = "345.678.901-75", Telefone = "(41) 97333-4455", DataNascimento = new DateTime(1993, 11, 5) },
+            new Hospede { Nome = "Gustavo Ribeiro Santos", Cpf = "456.789.012-49", Telefone = "(41) 96444-5566", DataNascimento = new DateTime(1988, 1, 30) },
+            new Hospede { Nome = "Juliana Pereira Rocha", Cpf = "567.890.123-03", Telefone = "(41) 95555-6677", DataNascimento = new DateTime(1995, 9, 18) },
+            new Hospede { Nome = "Marcelo Henrique Dias", Cpf = "678.901.234-69", Telefone = "(41) 94666-7788", DataNascimento = new DateTime(1979, 5, 2) }
         );
     }
 

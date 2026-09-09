@@ -29,6 +29,7 @@ namespace SisHospedar.Models
 
         [Required(ErrorMessage = "O CPF é obrigatório.")]
         [StringLength(14)]
+        [CpfValido]
         [Display(Name = "CPF")]
         public string Cpf { get; set; } = string.Empty;
 

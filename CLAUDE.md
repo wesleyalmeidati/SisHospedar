@@ -77,6 +77,11 @@ When adding a new employee-only controller/action, use `[RequerFuncionario]`/`[R
 - FKs to `Hospede`/`Apartamento` from `Reserva`/`Hospedagem` use `DeleteBehavior.Restrict` (no cascade); `Consumo → Hospedagem` cascades, `Consumo → Produto` restricts.
 - Money fields (`Apartamento.ValorDiaria`, `Produto.Preco`, `Consumo.ValorUnitario`) are `decimal(10,2)`.
 - `Hospedagem.TotalConsumo` and `Consumo.ValorTotal` are computed `[NotMapped]` properties, not persisted columns.
+- `Hospede.Cpf` carries `[CpfValido]` (`Models/CpfValidoAttribute.cs`) — a real modulo-11 check-digit validator, not just a length/format check, and it rejects all-same-digit sequences (`111.111.111-11` etc.) that satisfy the formula mathematically but are never real issued CPFs. It only runs during `ModelState` validation on a controller-bound request, never against rows already in the database, so it doesn't touch existing data — but that's also exactly why `Program.cs`'s seeded guests carry real calculated check digits (`Ana Beatriz Souza`'s CPF ends in `-09`, not the old placeholder `-01`): editing one of them through `HospedeController.Edit` without touching the CPF re-validates it on save, and the old sequential placeholders would fail the real algorithm.
+
+### Guest self-registration vs. reception check-in: same `Hospede`, different required fields
+
+`ClienteController.Registrar` (self-service, `/Cliente/Registrar`) and `HospedeController.Create` (reception/counter, employee-only) both create `Hospede` rows, but only self-registration requires `Login`/`Email` — a counter guest may never get a login at all. Because of that, `Login`/`Email` are **not** `[Required]` on the `Hospede` model itself (that would break `HospedeController.Create`'s `[Bind("Nome,Cpf,Telefone,DataNascimento")]`, which deliberately excludes them and leaves them `null`); `ClienteController.Registrar` enforces both manually via `ModelState.AddModelError`, the same pattern it already used for the Login/CPF uniqueness checks. It also checks `Hospede.Email` uniqueness explicitly before calling `CreateAsync` — `Email` has a database unique index (used by password reset, see below), so without this check a duplicate would only surface as a raw unhandled `DbUpdateException` on save instead of a normal form error.
 
 ### Passwords
 
