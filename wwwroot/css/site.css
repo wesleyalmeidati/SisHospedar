@@ -35,6 +35,29 @@
    real — sem isso, aparece rolagem horizontal indesejada no Windows. */
 html { overflow-x: hidden; }
 
+/* PT: "Sticky footer" via flexbox — sem isso, o rodapé (.footer, position: static)
+   só é empurrado pra baixo pelo próprio conteúdo da página; numa página curta
+   (formulário de login, uma listagem vazia, etc.) ele "flutua" logo depois do
+   conteúdo, no meio da tela, em vez de ficar ancorado embaixo. A correção clássica:
+   body vira uma coluna flex com altura mínima igual à viewport inteira; main.container
+   recebe "flex: 1 0 auto" e cresce pra ocupar todo o espaço sobrando entre a navbar
+   e o rodapé — o espaço em branco extra fica DENTRO de <main>, acima do rodapé, que
+   passa a ficar sempre na borda inferior da tela (ou logo após o conteúdo, se esse
+   conteúdo já for mais alto que a viewport). Nenhum valor de altura é "chutado" —
+   o navegador calcula sozinho, então funciona igual em qualquer tela/zoom.
+   EN: Flexbox "sticky footer" — without this, the footer (.footer, position: static)
+   is only pushed down by the page's own content; on a short page (login form, an
+   empty listing, etc.) it "floats" right after the content, in the middle of the
+   screen, instead of staying anchored at the bottom. The classic fix: body becomes
+   a flex column spanning the full viewport height; main.container gets
+   "flex: 1 0 auto" and grows to fill whatever space is left between the navbar and
+   the footer — the extra blank space lives INSIDE <main>, above the footer, which
+   then always sits at the bottom edge of the screen (or right after the content, if
+   that content is already taller than the viewport). No height value is guessed —
+   the browser works it out on its own, so it holds up on any screen size/zoom.
+*/
+html, body { height: 100%; }
+
 body {
   background-color: var(--paper);
   color: var(--text);
@@ -42,6 +65,9 @@ body {
   font-weight: 400;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, .navbar-brand {
@@ -58,7 +84,27 @@ h2 {
 
 .container { max-width: 1180px; }
 
-main.container { padding-top: 2.5rem; padding-bottom: 3.5rem; }
+/* PT: "flex: 1 0 auto" faz este <main> absorver toda sobra de altura da viewport
+   (ver comentário do "sticky footer" acima de html/body); "display: flex;
+   flex-direction: column" NÃO estica o conteúdo interno automaticamente — só um
+   filho direto que peça explicitamente "flex: 1" (como .auth-shell, mais abaixo)
+   é que passa a crescer para preencher esse espaço. Páginas normais (listagens,
+   tabelas, a home) não usam essa propriedade em seus elementos e continuam do
+   tamanho do próprio conteúdo, sem nenhuma mudança visual.
+   EN: "flex: 1 0 auto" makes this <main> absorb whatever viewport height is left
+   over (see the "sticky footer" comment above html/body); "display: flex;
+   flex-direction: column" does NOT auto-stretch inner content — only a direct
+   child that explicitly opts in with "flex: 1" (like .auth-shell, further down)
+   grows to fill that space. Regular pages (listings, tables, the homepage) don't
+   set that on their elements and keep sizing to their own content, no visual
+   change for them. */
+main.container {
+  padding-top: 2.5rem;
+  padding-bottom: 3.5rem;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ---- Navbar: branca, minimalista, tipografia com tracking ----
    PT: Seletores em .navbar puro (não .navbar-dark/.navbar-light) — a cor real vem
@@ -362,6 +408,11 @@ main.container { padding-top: 2.5rem; padding-bottom: 3.5rem; }
   background-color: var(--ink);
   color: rgba(255, 255, 255, 0.55);
   border-top: none;
+  /* PT: Nunca encolhe abaixo do próprio conteúdo — é só o <main> (acima) que cresce
+     para preencher a sobra de altura; o rodapé sempre mantém seu tamanho natural.
+     EN: Never shrinks below its own content — only <main> (above) grows to fill
+     leftover height; the footer always keeps its natural size. */
+  flex-shrink: 0;
 }
 
 .footer-columns {
@@ -603,8 +654,27 @@ main.container { padding-top: 2.5rem; padding-bottom: 3.5rem; }
 }
 
 /* ==================== Autenticação (Cliente / Funcionário) ==================== */
+/* PT: Telas de login/registro/redefinição de senha (Views/Shared/Login.cshtml,
+   Views/Cliente/Registrar.cshtml, Views/Conta/*.cshtml) são as únicas que pedem
+   pra ocupar toda a sobra de altura de <main> ("flex: 1", filho direto do
+   main.container flex — ver comentário lá em cima) e centralizar o cartão dentro
+   dela. Antes disso usava "min-height: calc(100vh - 250px)" — um chute pra
+   compensar a altura de navbar + rodapé que não batia em telas menores/maiores
+   (era exatamente essa conta errada que fazia o rodapé "flutuar" no meio da tela
+   em telas mais altas). Com o flex, não tem chute nenhum: o navegador mede a
+   altura real que sobrou.
+   EN: The login/register/password-reset screens (Views/Shared/Login.cshtml,
+   Views/Cliente/Registrar.cshtml, Views/Conta/*.cshtml) are the only ones that ask
+   to fill all of <main>'s leftover height ("flex: 1", a direct child of the flex
+   main.container — see the comment above) and center their card inside it. This
+   used to be "min-height: calc(100vh - 250px)" — a guess meant to compensate for
+   navbar + footer height that didn't hold up on shorter/taller screens (that wrong
+   math is exactly what made the footer "float" mid-screen on taller viewports).
+   With flex, there's no guessing at all: the browser measures the real leftover
+   height. */
 .auth-shell {
-  min-height: calc(100vh - 250px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
