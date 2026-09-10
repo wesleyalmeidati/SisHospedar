@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -60,6 +61,63 @@ builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 //     variable, never hardcoded. In integration tests, CustomWebApplicationFactory
 //     swaps it for a fake that just captures the email in memory.
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+// PT: Em produção a aplicação roda atrás do ingress do Azure Container Apps, que
+//     termina o TLS e repassa a requisição pro Kestrel em HTTP puro, informando o
+//     protocolo/IP originais em X-Forwarded-Proto/X-Forwarded-For. Sem ler esses
+//     headers, a aplicação se enxerga em HTTP e três coisas quebram em silêncio:
+//     o cookie de autenticação sai sem a flag Secure (CookieSecurePolicy padrão é
+//     SameAsRequest), o UseHsts() nunca emite o header (só emite em requisição
+//     HTTPS) e os redirects saem com "http://". Pior: RemoteIpAddress vira o IP
+//     interno do ingress, igual pra todo mundo — o que torna o rate limiting
+//     "por IP" abaixo um limite GLOBAL, compartilhado por todos os visitantes.
+//     KnownNetworks/KnownProxies são limpos porque o IP do ingress não é fixo nem
+//     conhecido de antemão; isso é seguro aqui porque o container só é alcançável
+//     através do ingress, nunca diretamente.
+// EN: In production the app runs behind the Azure Container Apps ingress, which
+//     terminates TLS and forwards the request to Kestrel over plain HTTP, passing
+//     the original scheme/IP in X-Forwarded-Proto/X-Forwarded-For. Without reading
+//     those headers the app believes it's on HTTP and three things break silently:
+//     the auth cookie ships without the Secure flag (default CookieSecurePolicy is
+//     SameAsRequest), UseHsts() never emits its header (HTTPS requests only), and
+//     redirects are written with "http://". Worse: RemoteIpAddress becomes the
+//     ingress's internal IP, identical for everyone — which turns the "per IP"
+//     rate limiting below into a GLOBAL limit shared by every visitor.
+//     KnownNetworks/KnownProxies are cleared because the ingress IP is neither
+//     fixed nor known upfront; that's safe here because the container is only
+//     reachable through the ingress, never directly.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// PT: Compressão de resposta (Brotli/Gzip por padrão). EnableForHttps é false por
+//     padrão no ASP.NET Core por causa do ataque BREACH, que explora compressão +
+//     segredo refletido na mesma resposta; aqui o segredo em jogo seria o token de
+//     antiforgery, que o ASP.NET Core já mascara com um valor aleatório por
+//     resposta — justamente a mitigação recomendada contra BREACH. Como todo o
+//     tráfego é HTTPS, sem isso não haveria compressão nenhuma.
+// EN: Response compression (Brotli/Gzip by default). EnableForHttps defaults to
+//     false in ASP.NET Core because of the BREACH attack, which exploits
+//     compression + a secret reflected in the same response; the secret here would
+//     be the antiforgery token, which ASP.NET Core already masks with a per-response
+//     random value — precisely the recommended BREACH mitigation. Since all traffic
+//     is HTTPS, without this there would be no compression at all.
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+
+// PT: O cookie de antiforgery é o único que o ASP.NET Core cria com SecurePolicy
+//     "None" por padrão (para funcionar em dev sobre HTTP puro). SameAsRequest o
+//     alinha aos cookies de autenticação: com o UseForwardedHeaders acima, em
+//     produção a requisição é HTTPS e ele passa a sair com a flag Secure, enquanto
+//     localmente sobre HTTP continua funcionando normalmente.
+// EN: The antiforgery cookie is the only one ASP.NET Core creates with SecurePolicy
+//     "None" by default (so it works in dev over plain HTTP). SameAsRequest aligns it
+//     with the authentication cookies: with UseForwardedHeaders above, the request is
+//     HTTPS in production and the cookie starts shipping with the Secure flag, while
+//     locally over HTTP it keeps working normally.
+builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 
 builder.Services.AddControllersWithViews();
 
@@ -309,6 +367,14 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
+// PT: Precisa ser o PRIMEIRO middleware — tudo que depende de esquema (HSTS,
+//     redirect HTTPS, flag Secure do cookie) ou de IP de origem (rate limiting)
+//     lê esses valores depois daqui. Ver a configuração de ForwardedHeadersOptions.
+// EN: Must be the FIRST middleware — everything that depends on the scheme (HSTS,
+//     HTTPS redirect, the cookie's Secure flag) or on the client IP (rate limiting)
+//     reads those values after this point. See the ForwardedHeadersOptions setup.
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -316,7 +382,60 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// PT: Antes do UseStaticFiles pra que o CSS também seja comprimido.
+// EN: Before UseStaticFiles so the CSS gets compressed too.
+app.UseResponseCompression();
+
+// PT: Cabeçalhos de segurança. frame-ancestors 'none' (com X-Frame-Options junto,
+//     para navegadores antigos) impede que o painel seja embutido num iframe de
+//     outro site — clickjacking. A lista de origens da CSP é exatamente o que as
+//     Views e o site.css já carregam hoje: Bootstrap via jsDelivr, fontes do Google
+//     (o CSS vem de fonts.googleapis.com e os arquivos de fonte de fonts.gstatic.com)
+//     e as fotos de Unsplash/Pexels. 'unsafe-inline' em style-src é necessário
+//     porque algumas Views usam atributo style="..." direto no elemento.
+// EN: Security headers. frame-ancestors 'none' (plus X-Frame-Options for older
+//     browsers) stops the dashboard from being embedded in another site's iframe —
+//     clickjacking. The CSP origin list is exactly what the Views and site.css
+//     already load today: Bootstrap via jsDelivr, Google Fonts (the CSS comes from
+//     fonts.googleapis.com and the font files from fonts.gstatic.com) and the
+//     Unsplash/Pexels photos. 'unsafe-inline' in style-src is required because some
+//     Views use a style="..." attribute directly on the element.
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "img-src 'self' data: https://images.unsplash.com https://images.pexels.com; " +
+        "media-src 'self'; " +
+        "frame-ancestors 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self'";
+    await next();
+});
+
+// PT: Sem Cache-Control, o navegador revalida cada arquivo estático a cada
+//     navegação — um round-trip inteiro (~270ms daqui até o leste dos EUA) só pra
+//     receber "304 Não Modificado". O site.css é referenciado com
+//     asp-append-version="true" no _Layout, então a URL muda junto com o conteúdo
+//     e um cache longo nunca serve arquivo velho.
+// EN: With no Cache-Control the browser revalidates every static file on each
+//     navigation — a full round-trip (~270ms from here to US East) just to get back
+//     "304 Not Modified". site.css is referenced with asp-append-version="true" in
+//     _Layout, so its URL changes together with its content and a long cache can
+//     never serve a stale file.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+        ctx.Context.Response.Headers.CacheControl = "public,max-age=604800"
+});
+
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -105,6 +105,7 @@ namespace SisHospedar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("AutenticacaoPublica")]
         public async Task<IActionResult> RedefinirSenha(string tipo, int id, string token, string novaSenha)
         {
             var resultado = string.Equals(tipo, "funcionario", StringComparison.OrdinalIgnoreCase)

@@ -17,11 +17,13 @@ namespace SisHospedar.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IAutenticacaoService _autenticacao;
+        private readonly IWebHostEnvironment _ambiente;
 
-        public HomeController(AppDbContext context, IAutenticacaoService autenticacao)
+        public HomeController(AppDbContext context, IAutenticacaoService autenticacao, IWebHostEnvironment ambiente)
         {
             _context = context;
             _autenticacao = autenticacao;
+            _ambiente = ambiente;
         }
 
         // PT: Página pública do hotel — mostra os 3 tipos de acomodação (Solteiro/
@@ -45,8 +47,34 @@ namespace SisHospedar.Controllers
                 .ToListAsync())
                 .Select(t => (t.Capacidade, t.ValorDiaria))
                 .ToList();
+
+            // PT: wwwroot/videos/ é gitignored, então o hero.mp4 existe só na máquina
+            //     de quem o baixou — nunca na imagem publicada. Sem esta checagem a
+            //     tag <video autoplay> pede o arquivo em toda visita à home e leva 404,
+            //     desperdiçando uma requisição; o fundo correto em produção é a foto
+            //     definida no site.css, que já é o fallback natural sem a tag.
+            // EN: wwwroot/videos/ is gitignored, so hero.mp4 only exists on the machine
+            //     of whoever downloaded it — never in the published image. Without this
+            //     check the <video autoplay> tag requests the file on every home page
+            //     visit and gets a 404, wasting a request; the correct production
+            //     background is the photo set in site.css, which is the natural
+            //     fallback when the tag isn't rendered.
+            ViewData["TemVideoHero"] = _ambiente.WebRootFileProvider
+                .GetFileInfo("videos/hero.mp4").Exists;
+
             return View(tipos);
         }
+
+        // PT: Destino do app.UseExceptionHandler("/Home/Error") em produção. Sem esta
+        //     action a rota não existia e uma exceção não tratada virava um 404 confuso.
+        //     A View não mostra detalhe nenhum da exceção de propósito — stack trace em
+        //     produção é vazamento de informação.
+        // EN: Target of app.UseExceptionHandler("/Home/Error") in production. Without
+        //     this action the route didn't exist and an unhandled exception turned into
+        //     a confusing 404. The View deliberately shows no exception detail — a
+        //     stack trace in production is an information leak.
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public IActionResult Error() => View();
 
         public IActionResult Login() => View();
 

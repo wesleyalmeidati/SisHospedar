@@ -52,9 +52,12 @@
        EN: Plays automatically once you add wwwroot/videos/hero.mp4 (see the
            README.md in that folder). Without the file, it falls back to the
            waterfall background photo (set in site.css) without breaking anything. *@
-    <video class="hero-video" autoplay muted loop playsinline>
-        <source src="~/videos/hero.mp4" type="video/mp4" />
-    </video>
+    @if ((bool?)ViewData["TemVideoHero"] == true)
+    {
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="~/videos/hero.mp4" type="video/mp4" />
+        </video>
+    }
     <div class="hero-overlay"></div>
     <div class="hero-content">
         <h1 class="hero-title">Conforto e hospitalidade em cada detalhe.</h1>
