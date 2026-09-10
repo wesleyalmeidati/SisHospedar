@@ -6,14 +6,14 @@
 #     final image ships just the ASP.NET Core runtime, much smaller. Restores
 #     with only the .csproj before copying the rest of the source, to cache the
 #     NuGet package layer across builds when only source code changes.
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY SisHospedar.csproj .
 RUN dotnet restore SisHospedar.csproj
 COPY . .
 RUN dotnet publish SisHospedar.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 8080

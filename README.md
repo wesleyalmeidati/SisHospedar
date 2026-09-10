@@ -2,7 +2,7 @@
 
 **🔗 Aplicação no ar: [sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io](https://sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io/)** — login `wesley.sales` / senha `Senha123` (ou veja a tabela completa [mais abaixo](#credenciais-de-teste))
 
-Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 8)** com **Entity Framework Core**, permitindo o controle de hóspedes, apartamentos, reservas, hospedagens, funcionários, produtos e consumo.
+Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 10)** com **Entity Framework Core**, permitindo o controle de hóspedes, apartamentos, reservas, hospedagens, funcionários, produtos e consumo.
 
 > Este projeto é a modernização do meu Trabalho de Conclusão de Curso, originalmente desenvolvido em **ASP.NET Web Forms (.NET Framework) com ADO.NET**. Reescrevi a aplicação usando o stack atual do ecossistema .NET, corrigindo problemas de segurança do projeto original e aplicando boas práticas de arquitetura.
 
@@ -48,7 +48,7 @@ Permite ao hóspede:
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | ASP.NET Core MVC (.NET 8) |
+| Backend | ASP.NET Core MVC (.NET 10) |
 | Acesso a dados | Entity Framework Core (SQL Server) |
 | Frontend | Razor Views + Bootstrap 5, com design system próprio (`wwwroot/css/site.css`) |
 | Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + ASP.NET Core Identity (`UserManager`/`SignInManager`, hash, lockout, reset de senha) |
@@ -66,7 +66,7 @@ Este projeto começou como um sistema em **ASP.NET Web Forms + ADO.NET puro** (D
 ## Como rodar localmente
 
 ### Pré-requisitos
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - SQL Server (local, Express ou LocalDB)
 
 ### Passos
@@ -215,6 +215,7 @@ SisHospedar/
 - [x] CI/CD automatizado — build + testes + push + `containerapp update` a cada push em `main` (ver `.github/workflows/ci.yml`), tagueando a imagem com o SHA do commit em vez de `:latest`
 - [x] Rate limiting por IP em login, registro e "esqueci minha senha" (`Microsoft.AspNetCore.RateLimiting`, nativo do ASP.NET Core, sem custo) — complementa o lockout por conta do Identity, que trava uma conta específica mas não impede alguém de varrer várias contas diferentes a partir do mesmo IP
 - [x] Validação real de CPF (dígito verificador via módulo 11, não só formato) e campos obrigatórios no autocadastro do hóspede
+- [x] Atualização de .NET 8 para **.NET 10** (LTS) — target framework, EF Core 10, imagens base do Docker e CI. Duas coisas apareceram no caminho: o pacote `Microsoft.AspNetCore.Identity` 2.2.0 era um resquício da era ASP.NET Core 2.2 e foi removido (o Identity já vem no shared framework de um projeto `Sdk.Web`), e a troca de provider nos testes precisou de um ajuste — ver a nota sobre `IDbContextOptionsConfiguration` no `CLAUDE.md`. Nenhuma migration nova foi necessária: o snapshot gerado pelo EF Core 8 continua consistente sob o EF Core 10, então o banco de produção não mudou.
 
 ### Escopo final
 

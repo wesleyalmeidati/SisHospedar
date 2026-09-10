@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SisHospedar.Data;
 using SisHospedar.Services;
 
@@ -67,9 +69,18 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-            if (descriptor != null) services.Remove(descriptor);
+            // PT: Não basta remover DbContextOptions<AppDbContext>: desde o EF Core 9,
+            //     AddDbContext também registra um IDbContextOptionsConfiguration<T> que
+            //     carrega o UseSqlServer do Program.cs. Deixá-lo para trás faria os dois
+            //     providers coexistirem, e o EF recusa isso ("Only a single database
+            //     provider can be registered in a service provider").
+            // EN: Removing DbContextOptions<AppDbContext> is not enough: since EF Core 9,
+            //     AddDbContext also registers an IDbContextOptionsConfiguration<T> holding
+            //     Program.cs's UseSqlServer. Leaving it behind would make both providers
+            //     coexist, which EF rejects ("Only a single database provider can be
+            //     registered in a service provider").
+            services.RemoveAll<DbContextOptions<AppDbContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
 
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
 
