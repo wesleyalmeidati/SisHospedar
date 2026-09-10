@@ -1,6 +1,6 @@
 # SisHospedar
 
-**🔗 Aplicação no ar: [sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io](https://sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io/)** — login `wesley.sales` / senha `Senha123` (ou veja a tabela completa [mais abaixo](#credenciais-de-teste))
+**🔗 Aplicação no ar: [sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io](https://sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io/)** — login `luan.santos` / senha `Senha123` (ver [credenciais de teste](#credenciais-de-teste))
 
 Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 10)** com **Entity Framework Core**, permitindo o controle de hóspedes, apartamentos, reservas, hospedagens, funcionários, produtos e consumo.
 
@@ -107,15 +107,15 @@ Os testes (`SisHospedar.Tests/`) sobem a aplicação real em memória e trocam o
 
 ### Credenciais de teste
 
-Na primeira execução contra um banco vazio, o `Program.cs` popula hóspedes, apartamentos, produtos e os funcionários de teste abaixo — todos com a senha **`Senha123`** (armazenada como hash). O login de cada um segue o padrão `primeiro.sobrenome`, o mesmo gerado automaticamente ao cadastrar um funcionário novo pelo sistema:
+Na primeira execução contra um banco vazio, o `Program.cs` popula hóspedes, apartamentos, produtos e um funcionário para cada cargo — senha sempre armazenada como hash, login no padrão `primeiro.sobrenome` (o mesmo que o sistema gera sozinho ao cadastrar um funcionário novo).
 
-| Login | Cargo |
-|---|---|
-| `wesley.sales` | Administrador |
-| `luan.santos` | Gerente |
-| `matias.sampaio` | Recepcionista |
-| `camila.rocha` | Limpeza |
-| `diego.fernandes` | Vallet |
+Para conhecer o sistema, use a conta de **Gerente**, que tem acesso total:
+
+| Login | Senha | Cargo |
+|---|---|---|
+| `luan.santos` | `Senha123` | Gerente |
+
+As outras contas do seed existem para exercitar as telas específicas de cada cargo em ambiente local; os logins saem dos nomes listados em `Program.cs`, seguindo o mesmo padrão. A conta de Administrador teve a senha trocada no ambiente publicado e não usa mais a senha do seed.
 
 Para testar o portal do hóspede, crie uma conta nova em `/Cliente/Registrar` — os hóspedes seedados não têm login/senha (foram cadastrados como se fosse pela recepção, no balcão).
 
