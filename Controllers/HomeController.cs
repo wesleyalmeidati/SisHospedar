@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SisHospedar.Authentication;
 using SisHospedar.Data;
 using SisHospedar.Services;
@@ -18,12 +19,18 @@ namespace SisHospedar.Controllers
         private readonly AppDbContext _context;
         private readonly IAutenticacaoService _autenticacao;
         private readonly IWebHostEnvironment _ambiente;
+        private readonly IMemoryCache _cache;
 
-        public HomeController(AppDbContext context, IAutenticacaoService autenticacao, IWebHostEnvironment ambiente)
+        public HomeController(
+            AppDbContext context,
+            IAutenticacaoService autenticacao,
+            IWebHostEnvironment ambiente,
+            IMemoryCache cache)
         {
             _context = context;
             _autenticacao = autenticacao;
             _ambiente = ambiente;
+            _cache = cache;
         }
 
         // PT: Página pública do hotel — mostra os 3 tipos de acomodação (Solteiro/
@@ -38,15 +45,36 @@ namespace SisHospedar.Controllers
         //     separate "TipoAcomodacao" entity in the model. All 3 types always show
         //     (even if every room of that type is occupied); real per-date
         //     availability is checked at booking time.
+        // PT: Esta consulta é a única coisa entre a home pública e o banco, e o Azure SQL
+        //     do projeto é tier Basic — cada visita pagava esse ida-e-volta. O resultado
+        //     (faixa de preço por capacidade) muda só quando alguém cadastra apartamento
+        //     ou mexe na diária, o que é raro, então 5 minutos de cache em memória é
+        //     bastante margem: uma alteração aparece na home em no máximo 5 minutos e
+        //     nenhuma outra tela usa este cache. Em memória do próprio processo, sem
+        //     serviço externo e sem custo.
+        // EN: This query is the only thing between the public home page and the database,
+        //     and the project's Azure SQL is on the Basic tier — every visit was paying
+        //     that round-trip. The result (price range per capacity) only changes when
+        //     someone adds an apartment or edits a rate, which is rare, so a 5-minute
+        //     in-memory cache is plenty of headroom: a change shows up on the home page
+        //     within 5 minutes at worst, and no other screen uses this cache. In-process
+        //     memory, no external service, no cost.
+        private const string ChaveCacheTipos = "home:tipos-acomodacao";
+
         public async Task<IActionResult> Index()
         {
-            var tipos = (await _context.Apartamentos
-                .GroupBy(a => a.Capacidade)
-                .Select(g => new { Capacidade = g.Key, ValorDiaria = g.Min(a => a.ValorDiaria) })
-                .OrderBy(t => t.ValorDiaria)
-                .ToListAsync())
-                .Select(t => (t.Capacidade, t.ValorDiaria))
-                .ToList();
+            var tipos = await _cache.GetOrCreateAsync(ChaveCacheTipos, async entrada =>
+            {
+                entrada.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return (await _context.Apartamentos
+                    .AsNoTracking()
+                    .GroupBy(a => a.Capacidade)
+                    .Select(g => new { Capacidade = g.Key, ValorDiaria = g.Min(a => a.ValorDiaria) })
+                    .OrderBy(t => t.ValorDiaria)
+                    .ToListAsync())
+                    .Select(t => (t.Capacidade, t.ValorDiaria))
+                    .ToList();
+            }) ?? [];
 
             // PT: wwwroot/videos/ é gitignored, então o hero.mp4 existe só na máquina
             //     de quem o baixou — nunca na imagem publicada. Sem esta checagem a

@@ -3,7 +3,9 @@
    paleta neutra (branco/carvão), sans-serif em peso variável, fotografia de
    tela cheia, espaço generoso, geometria reta (sem cantos muito arredondados).
 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap');
+/* A fonte Inter é carregada por <link> no <head> do _Layout, não por @import aqui:
+   um @import só é descoberto depois que este arquivo é baixado e interpretado,
+   encadeando conexões novas em série em vez de abri-las em paralelo. */
 
 :root {
   --ink: #1A1A18;

@@ -119,6 +119,12 @@ builder.Services.AddResponseCompression(options => options.EnableForHttps = true
 //     locally over HTTP it keeps working normally.
 builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
 
+// PT: Cache em memória do próprio processo — usado por HomeController.Index para não
+//     bater no banco a cada visita à home pública. Sem serviço externo, sem custo.
+// EN: In-process memory cache — used by HomeController.Index to avoid hitting the
+//     database on every visit to the public home page. No external service, no cost.
+builder.Services.AddMemoryCache();
+
 builder.Services.AddControllersWithViews();
 
 // PT: UserManager/SignInManager do ASP.NET Core Identity para as duas identidades,
