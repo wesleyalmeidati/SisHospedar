@@ -143,10 +143,19 @@ namespace SisHospedar.Controllers
             return View(reserva);
         }
 
+        // PT: ToList() antes do SelectList é necessário: DescricaoParaSelecao é [NotMapped]
+        //     e composta em C#, então o EF não consegue traduzi-la para SQL. Materializar
+        //     primeiro faz a composição acontecer em memória, sobre as linhas já trazidas.
+        // EN: ToList() before SelectList is required: DescricaoParaSelecao is [NotMapped] and
+        //     composed in C#, so EF can't translate it to SQL. Materializing first makes the
+        //     composition happen in memory, over the rows already fetched.
         private void CarregarApartamentos(int? selecionado) =>
             ViewData["ApartamentoId"] = new SelectList(
-                _context.Apartamentos.Where(a => a.Status == StatusApartamento.Disponivel).OrderBy(a => a.Numero),
-                "ApartamentoId", "Numero", selecionado);
+                _context.Apartamentos
+                    .Where(a => a.Status == StatusApartamento.Disponivel)
+                    .OrderBy(a => a.Numero)
+                    .ToList(),
+                "ApartamentoId", nameof(Apartamento.DescricaoParaSelecao), selecionado);
 
         // ---- Área do FUNCIONÁRIO (recepção): confirmar/cancelar reservas ----
         [RequerFuncionario]

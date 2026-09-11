@@ -2,30 +2,31 @@
 @{
     ViewData["Title"] = "SisHospedar";
 
-    // PT: O modelo de Apartamento não guarda foto nem nome de tipo — usamos um
-    //     conjunto fixo de imagens de banco livre (Pexels) e um dicionário de
-    //     nome, indexados pela Capacidade (1=Suíte Standard, 2=Suíte Executivo,
-    //     3=Suíte Master), só para dar a moldura visual do card de cada tipo.
-    //     Cada foto foi escolhida por bater com a configuração de cama do tipo
-    //     (uma cama de solteiro / uma de casal / uma de casal + uma de
-    //     solteiro) — não são fotos reais dos quartos do hotel.
-    // EN: Apartamento has no photo or type-name field — we use a fixed set of
-    //     stock images (Pexels) and a name dictionary, keyed by Capacidade
-    //     (1=Standard Suite, 2=Executive Suite, 3=Master Suite), purely to give
-    //     each type card its visual frame. Each photo was picked to match that
-    //     type's actual bed setup (one single bed / one double bed / one
-    //     double + one single) — these aren't real photos of the hotel's rooms.
+    // PT: O modelo de Apartamento não guarda foto — usamos um conjunto fixo de
+    //     imagens de banco livre (Pexels), indexadas pela Capacidade, só para dar a
+    //     moldura visual do card de cada tipo. Cada foto foi escolhida por bater com
+    //     a configuração de cama do tipo (uma cama de solteiro / uma de casal / uma
+    //     de casal + uma de solteiro) — não são fotos reais dos quartos do hotel.
+    //     O NOME do tipo, por outro lado, saiu daqui: antes havia um dicionário
+    //     local repetindo "Suíte Standard/Executivo/Master", que era uma segunda
+    //     cópia da mesma regra que o dropdown de reserva precisava. Agora vem de
+    //     Apartamento.CategoriaPara, fonte única — renomear uma categoria passa a
+    //     valer na home e nos formulários ao mesmo tempo.
+    // EN: Apartamento has no photo field — we use a fixed set of stock images
+    //     (Pexels), keyed by Capacidade, purely to give each type card its visual
+    //     frame. Each photo was picked to match that type's actual bed setup (one
+    //     single bed / one double bed / one double + one single) — these aren't real
+    //     photos of the hotel's rooms.
+    //     The type NAME, on the other hand, moved out of here: there used to be a
+    //     local dictionary repeating "Suíte Standard/Executivo/Master", a second copy
+    //     of the same rule the booking dropdown needed. It now comes from
+    //     Apartamento.CategoriaPara, a single source — renaming a category now takes
+    //     effect on the home page and in the forms at once.
     var fotoPorTipo = new Dictionary<int, string>
     {
         [1] = "https://images.pexels.com/photos/9899843/pexels-photo-9899843.jpeg?auto=compress&cs=tinysrgb&w=800",
         [2] = "https://images.pexels.com/photos/30708768/pexels-photo-30708768.jpeg?auto=compress&cs=tinysrgb&w=800",
         [3] = "https://images.pexels.com/photos/16153351/pexels-photo-16153351.jpeg?auto=compress&cs=tinysrgb&w=800",
-    };
-    var nomePorTipo = new Dictionary<int, string>
-    {
-        [1] = "Suíte Standard",
-        [2] = "Suíte Executivo",
-        [3] = "Suíte Master",
     };
 
     // PT: Comodidades reais do hotel, cada uma com uma foto de banco livre (Pexels)
@@ -95,7 +96,14 @@
         <div class="row g-4">
             @foreach (var tipo in Model)
             {
-                var nome = nomePorTipo.TryGetValue(tipo.Capacidade, out var n) ? n : $"Até {tipo.Capacidade} hóspedes";
+                @* PT: A acomodação (Solteiro/Casal/Triplo) entra junto da categoria porque
+                       o preço sozinho não diz para quantas pessoas o quarto serve — era
+                       preciso abrir a reserva para descobrir.
+                   EN: The occupancy (Solteiro/Casal/Triplo) appears alongside the category
+                       because the price alone doesn't say how many people the room sleeps —
+                       you had to open the booking form to find out. *@
+                var nome = $"Suíte {Apartamento.CategoriaPara(tipo.Capacidade)}";
+                var acomodacao = Apartamento.AcomodacaoPara(tipo.Capacidade);
                 var foto = fotoPorTipo.TryGetValue(tipo.Capacidade, out var url) ? url : fotoPorTipo[1];
 
                 <div class="col-md-4">
@@ -104,6 +112,7 @@
                             <span class="room-number">@nome</span>
                         </div>
                         <div class="room-card-body">
+                            <p class="text-muted mb-1" style="font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;">@acomodacao</p>
                             <p class="room-price">@tipo.ValorDiaria.ToString("C") <span>/ noite</span></p>
                         </div>
                     </div>

@@ -110,9 +110,18 @@ namespace SisHospedar.Controllers
         private void CarregarListas()
         {
             ViewData["HospedeId"] = new SelectList(_context.Hospedes.OrderBy(h => h.Nome), "HospedeId", "Nome");
+            // PT: Mesma descrição do dropdown do hóspede — a recepção também precisa saber
+            //     se o quarto é de casal ao abrir uma hospedagem no balcão. ToList() antes
+            //     porque DescricaoParaSelecao é [NotMapped] e não traduz para SQL.
+            // EN: The same description as the guest dropdown — reception also needs to know
+            //     whether the room is a double when opening a stay at the counter. ToList()
+            //     first because DescricaoParaSelecao is [NotMapped] and doesn't translate to SQL.
             ViewData["ApartamentoId"] = new SelectList(
-                _context.Apartamentos.Where(a => a.Status == StatusApartamento.Disponivel).OrderBy(a => a.Numero),
-                "ApartamentoId", "Numero");
+                _context.Apartamentos
+                    .Where(a => a.Status == StatusApartamento.Disponivel)
+                    .OrderBy(a => a.Numero)
+                    .ToList(),
+                "ApartamentoId", nameof(Apartamento.DescricaoParaSelecao));
         }
     }
 }
