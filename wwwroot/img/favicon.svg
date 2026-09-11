@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SisHospedar">
+  <!--
+    Versão do monograma feita para tamanho mínimo. Diferenças em relação a
+    sishospedar-marca.svg, todas por causa dos 16 pixels de uma aba de navegador:
+    fundo escuro em vez de bege (destaca numa barra de abas clara, onde marca clara
+    some), sem a palavra SISHOSPEDAR embaixo (ilegível e vira borrão) e sem a moldura
+    fina (some no downscale e só suja o contorno).
+    Atenção ao editar: comentário XML não aceita hífen duplo. Escrever os nomes das
+    variáveis CSS com os dois hífens quebra o arquivo inteiro, e o navegador mostra
+    imagem quebrada sem erro visível.
+  -->
+  <rect width="64" height="64" fill="#1A1A18"/>
+  <text x="32" y="44"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="34"
+        font-weight="bold"
+        letter-spacing="1"
+        fill="#FFFFFF">SH</text>
+</svg>

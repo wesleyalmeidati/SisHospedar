@@ -4,6 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SisHospedar</title>
+
+    @* PT: SVG primeiro, PNG como reserva — o navegador usa o primeiro formato que
+           entende, e todos os atuais entendem SVG (que fica nítido em qualquer tamanho
+           e pesa 1 KB). O PNG cobre navegador antigo. Sem nenhum dos dois, o navegador
+           pede /favicon.ico sozinho e leva 404 em toda visita.
+       EN: SVG first, PNG as a fallback — the browser uses the first format it
+           understands, and every current one understands SVG (which stays sharp at any
+           size and weighs 1 KB). The PNG covers older browsers. With neither, the
+           browser requests /favicon.ico on its own and gets a 404 on every visit. *@
+    <link rel="icon" type="image/svg+xml" href="~/img/favicon.svg" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="64x64" href="~/img/favicon.png" asp-append-version="true" />
     @* PT: preconnect manda o navegador abrir DNS + TCP + TLS com estes domínios já
            no início do parse do HTML, em paralelo, em vez de só quando descobrir o
            primeiro arquivo de cada um. Como o servidor está no leste dos EUA, cada
