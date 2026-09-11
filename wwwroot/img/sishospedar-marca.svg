@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="SisHospedar">
+  <!--
+    Monograma no mesmo vocabulário visual do site.css: fundo bege (surface-alt),
+    moldura fina cor pedra (stone), geometria reta (o projeto usa raio de 2px, nunca
+    cantos arredondados) e serifada, para o mesmo ar editorial do restante da marca.
+    Serif de sistema em vez de fonte web: assim o arquivo continua correto mesmo
+    aberto fora do site, onde a Inter não estaria carregada.
+    Atenção ao editar: comentário XML não aceita hífen duplo, então os nomes das
+    variáveis CSS aparecem aqui sem os dois hífens iniciais. Com eles, o arquivo vira
+    XML inválido e o navegador mostra imagem quebrada sem erro visível na página.
+  -->
+  <rect width="120" height="120" fill="#F5F3EF"/>
+  <rect x="8.5" y="8.5" width="103" height="103" fill="none" stroke="#8C7A63" stroke-width="1"/>
+  <text x="60" y="64"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="42"
+        letter-spacing="3"
+        fill="#1A1A18">SH</text>
+  <line x1="44" y1="76" x2="76" y2="76" stroke="#8C7A63" stroke-width="1"/>
+  <text x="60" y="92"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="7.5"
+        letter-spacing="2.4"
+        fill="#6B6960">SISHOSPEDAR</text>
+</svg>

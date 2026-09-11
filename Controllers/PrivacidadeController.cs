@@ -13,5 +13,15 @@ namespace SisHospedar.Controllers
     public class PrivacidadeController : Controller
     {
         public IActionResult Index() => View();
+
+        // PT: Política de Cookies detalhada, separada do aviso geral porque cumpre uma
+        //     função diferente: o aviso explica o tratamento de dados, esta página lista
+        //     tecnicamente cada cookie gravado. Também é o destino do link na barra de
+        //     aviso, então precisa ser pública.
+        // EN: Detailed Cookie Policy, kept separate from the general notice because it
+        //     serves a different purpose: the notice explains data processing, this page
+        //     technically lists every cookie written. It's also the target of the notice
+        //     bar's link, so it has to be public.
+        public IActionResult Cookies() => View();
     }
 }

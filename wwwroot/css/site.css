@@ -727,3 +727,62 @@ main.container {
   font-size: 2.2rem;
   margin: 0;
 }
+
+/* ===== Aviso de cookies =====
+   Barra informativa (não de consentimento) — ver o comentário no _Layout.cshtml. */
+
+/* O atributo hidden só vence se for declarado depois da regra que define o display:
+   sem isto, o "display: flex" abaixo sobrescreveria o hidden e a barra apareceria
+   sempre, inclusive para quem já a dispensou. */
+.aviso-cookies[hidden] {
+  display: none;
+}
+
+.aviso-cookies {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;
+  background: var(--paper);
+  border-top: 1px solid var(--stone);
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.25rem;
+}
+
+.aviso-cookies-conteudo {
+  max-width: 1100px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.aviso-cookies-texto {
+  margin: 0;
+  flex: 1 1 24rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.aviso-cookies-texto strong {
+  color: var(--text);
+}
+
+.aviso-cookies-texto a {
+  color: var(--stone-dark);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+  .aviso-cookies-conteudo {
+    gap: 0.85rem;
+  }
+
+  .aviso-cookies-conteudo .btn {
+    width: 100%;
+  }
+}

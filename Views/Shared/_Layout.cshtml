@@ -134,6 +134,7 @@
                     <p class="footer-heading">Contato</p>
                     <a href="mailto:contato@sishospedar.com.br">contato@sishospedar.com.br</a>
                     <a asp-controller="Privacidade" asp-action="Index">Aviso de Privacidade</a>
+                    <a asp-controller="Privacidade" asp-action="Cookies">Política de Cookies</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -142,7 +143,32 @@
         </div>
     </footer>
 
+    @* PT: Barra informativa, não de consentimento — o site só grava cookies necessários,
+           que a lei dispensa de consentimento, então não há o que aceitar ou recusar. Um
+           par "aceitar todos / somente o necessário" aqui levaria ao mesmo resultado nos
+           dois botões, simulando uma escolha inexistente.
+           Começa com "hidden": quem já dispensou nunca a vê reaparecer, e se o JavaScript
+           estiver bloqueado ela simplesmente não aparece, em vez de travar sem fechar.
+       EN: An informational bar, not a consent one — the site only writes necessary cookies,
+           which the law exempts from consent, so there is nothing to accept or refuse. An
+           "accept all / necessary only" pair here would lead to the same result on both
+           buttons, faking a choice that doesn't exist.
+           It starts "hidden": anyone who already dismissed it never sees it again, and if
+           JavaScript is blocked it simply doesn't appear rather than being stuck open. *@
+    <div id="aviso-cookies" class="aviso-cookies" role="region" aria-label="Aviso sobre cookies" hidden>
+        <div class="aviso-cookies-conteudo">
+            <p class="aviso-cookies-texto">
+                Este site usa <strong>apenas cookies necessários</strong> para manter você
+                conectado e proteger os formulários. Não há rastreamento, publicidade nem
+                cookies de terceiros — por isso não pedimos consentimento.
+                <a asp-controller="Privacidade" asp-action="Cookies">Ver a Política de Cookies</a>
+            </p>
+            <button type="button" id="aviso-cookies-fechar" class="btn btn-dark btn-sm">Entendi</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

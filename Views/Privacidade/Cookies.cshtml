@@ -1,0 +1,125 @@
+@{
+    ViewData["Title"] = "Política de Cookies";
+}
+
+<div class="row justify-content-center my-5">
+    <div class="col-lg-9">
+
+        <div class="d-flex align-items-center gap-4 mb-4 flex-wrap">
+            <img src="~/img/sishospedar-marca.svg" alt="" width="88" height="88" />
+            <div>
+                <p class="section-eyebrow mb-1">LGPD</p>
+                <h2 class="mb-1">Política de Cookies</h2>
+                <p class="text-muted mb-0">O que o SisHospedar grava no seu navegador, e por quê.</p>
+            </div>
+        </div>
+
+        <h4 class="mt-5">A versão curta</h4>
+        <p>
+            O SisHospedar usa <strong>quatro cookies, todos estritamente necessários</strong>
+            para o site funcionar. Não há cookies de análise de audiência, de publicidade ou
+            de rastreamento, e <strong>nenhum cookie de terceiros</strong> é gravado —
+            todos vêm do próprio site.
+        </p>
+
+        @* PT: Explicar a ausência do banner é mais útil que exibir um. A referência visual
+               que as pessoas têm (Airbnb, lojas) oferece "aceitar todos" x "só o
+               necessário", e a ausência disso aqui parece falha se não for explicada.
+           EN: Explaining the missing banner is more useful than showing one. The visual
+               reference people have (Airbnb, shops) offers "accept all" vs "necessary
+               only", and its absence here looks like an oversight unless explained. *@
+        <div class="alert alert-secondary">
+            <strong>Por que não existe um banner pedindo seu consentimento?</strong><br />
+            Porque não haveria escolha real a oferecer. Banners de cookies existem para que
+            você possa recusar os cookies <em>opcionais</em> — os de medição e publicidade.
+            Como aqui só existem os necessários ao funcionamento, que a legislação dispensa
+            de consentimento, os botões "aceitar todos" e "somente o necessário" levariam
+            exatamente ao mesmo resultado. Um banner assim seria só um incômodo simulando
+            uma decisão que não existe.
+        </div>
+
+        <h4 class="mt-5">Cookies utilizados</h4>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cookie</th>
+                        <th>Para que serve</th>
+                        <th>Duração</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>SisHospedar.Hospede</code></td>
+                        <td>
+                            Mantém você conectado à sua conta de hóspede depois do login.
+                            Sem ele, cada página pediria a senha de novo.
+                        </td>
+                        <td>30 minutos, renovados enquanto você navega</td>
+                    </tr>
+                    <tr>
+                        <td><code>SisHospedar.Funcionario</code></td>
+                        <td>
+                            Mesma função, para a equipe do hotel. As duas contas são
+                            independentes e usam cookies separados.
+                        </td>
+                        <td>30 minutos, renovados enquanto você navega</td>
+                    </tr>
+                    <tr>
+                        <td><code>.AspNetCore.Antiforgery.*</code></td>
+                        <td>
+                            Protege os formulários contra falsificação de requisição: garante
+                            que um envio partiu mesmo desta página, e não de um site
+                            malicioso agindo em seu nome.
+                        </td>
+                        <td>Até você fechar o navegador</td>
+                    </tr>
+                    <tr>
+                        <td><code>.AspNetCore.Mvc.CookieTempDataProvider</code></td>
+                        <td>
+                            Carrega uma mensagem de uma página para a seguinte — é o que faz
+                            o aviso "salvo com sucesso" aparecer depois de um envio.
+                        </td>
+                        <td>Apagado assim que a mensagem é exibida</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4 class="mt-5">Uma coisa que não é cookie</h4>
+        <p>
+            Ao fechar a barra de aviso sobre cookies, o site guarda essa preferência no
+            <strong>armazenamento local</strong> do navegador, não em um cookie. É uma
+            escolha deliberada: gravar um cookie apenas para lembrar que você leu o aviso
+            sobre cookies acrescentaria ao site exatamente o tipo de coisa que o aviso diz
+            não existir. Esse registro fica só no seu aparelho e nunca é enviado ao servidor.
+        </p>
+
+        <h4 class="mt-5">Como recusar ou apagar</h4>
+        <p>
+            Você pode apagar ou bloquear cookies nas configurações do seu navegador, a
+            qualquer momento. Vale saber o efeito: como os cookies aqui são os que sustentam
+            o login e a proteção dos formulários, <strong>bloqueá-los impede entrar na conta
+            e enviar formulários</strong>. A navegação pelas páginas públicas continua
+            funcionando normalmente.
+        </p>
+
+        <h4 class="mt-5">Se isso mudar</h4>
+        <p>
+            Caso o SisHospedar venha a adotar alguma ferramenta de medição de audiência, aí
+            sim passará a existir cookie opcional — e, com ele, a obrigação de pedir seu
+            consentimento antes de gravá-lo, com recusa tão fácil quanto a aceitação. Esta
+            página seria atualizada e um controle de preferências de verdade apareceria.
+        </p>
+
+        <p class="mt-5">
+            Para o quadro completo do tratamento de dados pessoais, veja o
+            <a asp-action="Index">Aviso de Privacidade</a>.
+        </p>
+
+        <p class="text-muted mt-4" style="font-size:.88rem;">
+            Última atualização: @DateTime.Today.ToString("dd/MM/yyyy")
+        </p>
+
+    </div>
+</div>
