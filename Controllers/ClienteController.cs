@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -25,12 +27,18 @@ namespace SisHospedar.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<Hospede> _userManager;
         private readonly IAutenticacaoService _autenticacao;
+        private readonly IPrivacidadeService _privacidade;
 
-        public ClienteController(AppDbContext context, UserManager<Hospede> userManager, IAutenticacaoService autenticacao)
+        public ClienteController(
+            AppDbContext context,
+            UserManager<Hospede> userManager,
+            IAutenticacaoService autenticacao,
+            IPrivacidadeService privacidade)
         {
             _context = context;
             _userManager = userManager;
             _autenticacao = autenticacao;
+            _privacidade = privacidade;
         }
 
         public IActionResult Registrar() => View();
@@ -208,6 +216,79 @@ namespace SisHospedar.Controllers
                 TempData["Sucesso"] = "Pedido de encerramento enviado à recepção.";
             }
             return RedirectToAction(nameof(MinhaConta));
+        }
+
+        // PT: Direito de acesso (LGPD Art. 18, II) — mostra ao titular exatamente o que o
+        //     sistema guarda sobre ele, inclusive o histórico de reservas e consumo.
+        // EN: Right of access (LGPD Art. 18, II) — shows the data subject exactly what the
+        //     system holds about them, including booking and consumption history.
+        [RequerHospede]
+        public async Task<IActionResult> MeusDados()
+        {
+            var dados = await _privacidade.ReunirDadosAsync(ObterHospedeId());
+            if (dados == null) return NotFound();
+            return View(dados);
+        }
+
+        // PT: Direito de portabilidade (LGPD Art. 18, V) — a lei pede formato
+        //     interoperável, por isso JSON e não PDF: o titular consegue levar o arquivo
+        //     para outro sistema, que é o objetivo do direito.
+        // EN: Right to portability (LGPD Art. 18, V) — the law asks for an interoperable
+        //     format, hence JSON rather than PDF: the data subject can take the file to
+        //     another system, which is the point of the right.
+        [RequerHospede]
+        public async Task<IActionResult> ExportarDados()
+        {
+            var dados = await _privacidade.ReunirDadosAsync(ObterHospedeId());
+            if (dados == null) return NotFound();
+
+            var json = JsonSerializer.Serialize(dados, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            return File(System.Text.Encoding.UTF8.GetBytes(json), "application/json",
+                $"meus-dados-sishospedar-{DateTime.Today:yyyy-MM-dd}.json");
+        }
+
+        [RequerHospede]
+        public IActionResult ExcluirConta() => View();
+
+        // PT: Direito de eliminação (LGPD Art. 18, VI). O serviço decide entre exclusão
+        //     real e anonimização — ver IPrivacidadeService, que explica por que nem toda
+        //     exclusão pode apagar a linha. Em qualquer um dos dois casos a sessão cai,
+        //     porque a conta deixou de existir ou perdeu o login.
+        // EN: Right to erasure (LGPD Art. 18, VI). The service decides between a real
+        //     delete and anonymization — see IPrivacidadeService, which explains why not
+        //     every erasure can drop the row. Either way the session ends, because the
+        //     account is gone or has lost its login.
+        [RequerHospede]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExcluirContaConfirmado()
+        {
+            var resultado = await _privacidade.ExcluirContaAsync(ObterHospedeId());
+
+            switch (resultado)
+            {
+                case ResultadoExclusao.BloqueadoEstadiaAtiva:
+                    TempData["Erro"] = "Você tem uma estadia em aberto. Peça o encerramento na recepção antes de excluir a conta.";
+                    return RedirectToAction(nameof(MeusDados));
+
+                case ResultadoExclusao.BloqueadoReservaPendente:
+                    TempData["Erro"] = "Você tem uma reserva pendente. Cancele-a com a recepção antes de excluir a conta.";
+                    return RedirectToAction(nameof(MeusDados));
+
+                case ResultadoExclusao.NaoEncontrado:
+                    return NotFound();
+            }
+
+            await HttpContext.SignOutAsync(Esquemas.Hospede);
+            TempData["Sucesso"] = resultado == ResultadoExclusao.Excluido
+                ? "Sua conta e seus dados foram excluídos."
+                : "Seus dados pessoais foram removidos. O registro das hospedagens já realizadas foi mantido de forma anonimizada, como exige a legislação fiscal.";
+            return RedirectToAction("Index", "Home");
         }
 
         private async Task AssinarCookieAsync(Hospede hospede)

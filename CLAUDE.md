@@ -62,6 +62,18 @@ Two logging rules this project settled on, both learned from reading real produc
 
 **Data Protection keys live in the database** (`AppDbContext.DataProtectionKeys` via `PersistKeysToDbContext<AppDbContext>()`, migration `PersistenciaChavesDataProtection`). The default is to write them to disk inside the container, which Container Apps discards on every deploy — production logs showed one new key ring per container start and a daily `AntiforgeryValidationException` ("key not found in the key ring"), meaning every deploy silently signed out all users and broke any form that was already open. The existing SQL database was chosen over Blob Storage or Key Vault specifically because it adds no paid resource. The remaining `XmlKeyManager` warning ("No XML encryptor configured") is accepted: encrypting the key ring at rest would require Key Vault, and Azure SQL already encrypts at rest via TDE.
 
+### LGPD
+
+The app holds real categories of personal data (`Hospede.Nome`/`Cpf`/`Telefone`/`DataNascimento`/`Email`), so the data-subject rights that require touching the database live in `IPrivacidadeService`/`PrivacidadeService`: access (Art. 18, II) via `/Cliente/MeusDados`, portability (Art. 18, V) via `/Cliente/ExportarDados` (JSON, because the law asks for an interoperable format), and erasure (Art. 18, VI) via `/Cliente/ExcluirConta`. The public notice is `/Privacidade` (`PrivacidadeController`, deliberately outside any authorization filter so someone can read it before creating an account), linked from the footer on every page.
+
+Three decisions here are deliberate and shouldn't be "simplified" away:
+
+- **Erasure is not always deletion.** A guest with no stay and no booking is genuinely deleted. A guest *with* history is **anonymized** instead — Art. 16 allows retaining what a legal obligation requires (the stay record and its financial entries) and Art. 12 treats anonymized data as no longer personal. `PrivacidadeTests` pins both branches precisely so a future refactor can't collapse them and silently erase fiscal history. Deletion is also refused outright while a stay is open or a booking is pending, since the hotel still needs to know who occupies the room.
+- **`Cpf` gets a marker, not null, on anonymization** (`ANON{id:D8}`): the column is `[Required]`, `StringLength(14)`, and carries an **unfiltered** unique index, so it needs a non-null unique value. (`Login`/`Email` *can* be nulled — their unique indexes are filtered.) The marker fails `[CpfValido]`, which is fine: that validator only runs on form binding, never against a stored row.
+- **There is no cookie banner and no consent checkbox, on purpose.** The only cookies are strictly necessary (auth, antiforgery, TempData) — no analytics, no third-party — and necessary cookies don't require consent. The legal basis for the guest data is contract execution (Art. 7º, V) plus legal obligation (Art. 7º, II), *not* consent; asking for consent you cannot honor the withdrawal of would misrepresent a choice the user doesn't have.
+
+`Views/Privacidade/Index.cshtml` opens with a prominent notice that this is a demo system and users should not enter a real CPF. That callout is the project's main practical protection: a publicly reachable demo holding real CPFs would be genuine personal data with genuine controller obligations attached.
+
 ### Local setup
 
 `appsettings.Development.json` is gitignored (contains the real DB password). Copy `appsettings.Development.json.example` to `appsettings.Development.json` and fill in a real SQL Server connection string before running. `Program.cs` throws on startup if `ConnectionStrings:DefaultConnection` is missing.

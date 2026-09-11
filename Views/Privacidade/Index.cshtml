@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Privacidade";
+}
+
+<div class="row justify-content-center my-5">
+    <div class="col-lg-8">
+
+        <p class="section-eyebrow">LGPD</p>
+        <h2 class="mb-4">Aviso de Privacidade</h2>
+
+        @* PT: Este alerta é a proteção mais importante da página. O site é um projeto de
+               demonstração publicamente acessível; CPF e data de nascimento reais guardados
+               aqui seriam dado pessoal de verdade sob a LGPD, com as responsabilidades que
+               isso acarreta. Avisar na entrada evita o problema em vez de administrá-lo.
+           EN: This callout is the most important protection on the page. The site is a
+               publicly reachable demo project; a real CPF and date of birth stored here
+               would be genuine personal data under LGPD, with the responsibilities that
+               brings. Warning up front avoids the problem instead of managing it. *@
+        <div class="alert alert-warning">
+            <strong>Este é um projeto de demonstração.</strong> O SisHospedar é um sistema
+            desenvolvido para fins de estudo e portfólio, sem operação hoteleira real por trás.
+            Não informe CPF, telefone ou data de nascimento verdadeiros ao criar uma conta —
+            use dados fictícios para conhecer o sistema.
+        </div>
+
+        <h4 class="mt-5">Quais dados são tratados</h4>
+        <p>
+            Ao criar uma conta de hóspede, o sistema armazena <strong>nome, CPF, telefone,
+            data de nascimento, e-mail e login</strong>. A senha nunca é guardada em texto
+            legível: apenas um <em>hash</em> criptográfico dela, que não permite recuperar a
+            senha original.
+        </p>
+        <p>
+            Durante o uso, ficam registradas suas <strong>reservas, hospedagens e os itens
+            consumidos</strong> durante a estadia, com datas, valores e o apartamento
+            utilizado.
+        </p>
+
+        <h4 class="mt-5">Por que esses dados são necessários</h4>
+        <p>
+            O tratamento se apoia na <strong>execução do contrato</strong> de hospedagem
+            (Art. 7º, V da LGPD) e no <strong>cumprimento de obrigação legal</strong>
+            (Art. 7º, II), já que a hospedagem exige identificação do hóspede e guarda dos
+            registros correspondentes.
+        </p>
+        <p>
+            Isso significa que <strong>não pedimos seu consentimento</strong> para esses
+            dados, e não seria correto pedir: consentimento pressupõe que você possa
+            retirá-lo livremente, o que não se aplica a dados necessários para prestar o
+            serviço e cumprir a lei. Pedir consentimento aqui daria a impressão falsa de uma
+            escolha que não existe.
+        </p>
+
+        <h4 class="mt-5">Cookies</h4>
+        <p>
+            O site usa <strong>apenas cookies estritamente necessários</strong>: o que mantém
+            você conectado após o login, o que protege os formulários contra falsificação de
+            requisição, e um temporário que carrega mensagens entre páginas (o aviso de
+            "salvo com sucesso", por exemplo).
+        </p>
+        <p>
+            Não há cookies de análise, de publicidade ou de rastreamento, e nenhum cookie de
+            terceiros é gravado. Como cookies necessários ao funcionamento não dependem de
+            consentimento, <strong>não existe banner de cookies neste site</strong> — ele
+            seria apenas um incômodo sem função.
+        </p>
+
+        <h4 class="mt-5">Com quem os dados são compartilhados</h4>
+        <p>
+            Seus dados não são vendidos nem cedidos a terceiros. Dois fornecedores participam
+            da operação técnica: a <strong>Microsoft Azure</strong>, onde a aplicação e o
+            banco de dados estão hospedados, e um <strong>serviço de e-mail</strong>, usado
+            unicamente para enviar o link de redefinição de senha quando você solicita.
+        </p>
+
+        <h4 class="mt-5">Seus direitos</h4>
+        <p>
+            Estando com a conta conectada, você pode exercer diretamente pela área
+            <a asp-controller="Cliente" asp-action="MeusDados">Meus dados</a>:
+        </p>
+        <ul>
+            <li><strong>Acesso</strong> — ver exatamente o que está armazenado sobre você.</li>
+            <li><strong>Portabilidade</strong> — baixar tudo em arquivo JSON, formato aberto que pode ser lido por outro sistema.</li>
+            <li><strong>Correção</strong> — pedir a atualização de um dado incorreto pela recepção.</li>
+            <li><strong>Eliminação</strong> — excluir sua conta.</li>
+        </ul>
+        <p>
+            Sobre a eliminação, uma ressalva honesta: se você <strong>nunca se hospedou</strong>,
+            seu cadastro é apagado por completo. Se você <strong>já teve alguma hospedagem</strong>,
+            o registro dela precisa ser mantido por obrigação legal — nesse caso seus dados
+            pessoais são removidos e o histórico permanece de forma
+            <strong>anonimizada</strong>, sem qualquer vínculo com sua identidade.
+        </p>
+
+        <h4 class="mt-5">Por quanto tempo os dados ficam guardados</h4>
+        <p>
+            Os dados de cadastro permanecem enquanto sua conta existir. Registros de
+            hospedagem e consumo são mantidos pelo prazo exigido pela legislação fiscal,
+            mesmo após a exclusão da conta — porém anonimizados, como descrito acima.
+        </p>
+
+        <h4 class="mt-5">Contato</h4>
+        <p>
+            Para dúvidas sobre este aviso ou sobre o tratamento dos seus dados, escreva para
+            <a href="mailto:contato@sishospedar.com.br">contato@sishospedar.com.br</a>.
+        </p>
+
+        <p class="text-muted mt-5" style="font-size:.88rem;">
+            Última atualização: @DateTime.Today.ToString("dd/MM/yyyy")
+        </p>
+
+    </div>
+</div>

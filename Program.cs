@@ -51,6 +51,12 @@ builder.Services.AddScoped<IConsumoService, ConsumoService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 
+// PT: Direitos do titular previstos na LGPD (acesso, portabilidade e eliminação) — ver
+//     IPrivacidadeService, que explica por que "excluir" às vezes significa anonimizar.
+// EN: LGPD data-subject rights (access, portability and erasure) — see
+//     IPrivacidadeService, which explains why "delete" sometimes means anonymize.
+builder.Services.AddScoped<IPrivacidadeService, PrivacidadeService>();
+
 // PT: Envio real de e-mail (Gmail via SMTP, ver Services/SmtpEmailSender.cs) —
 //     usado pelo fluxo de "esqueci minha senha" (ContaController). Configuração
 //     (Email:Remetente/Email:SenhaApp) vem de appsettings/variável de ambiente,

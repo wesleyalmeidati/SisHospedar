@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Excluir conta";
+}
+
+<div class="row justify-content-center my-5">
+    <div class="col-lg-7">
+
+        <p class="section-eyebrow">LGPD</p>
+        <h2 class="mb-4">Excluir minha conta</h2>
+
+        <div class="alert alert-danger">
+            <strong>Esta ação não pode ser desfeita.</strong> Depois de confirmar, você perde
+            o acesso à sua conta e precisará criar um cadastro novo para reservar de novo.
+        </div>
+
+        <h5 class="mt-4">O que acontece com cada coisa</h5>
+        <ul>
+            <li>
+                <strong>Seu cadastro</strong> — nome, CPF, telefone, data de nascimento,
+                e-mail e login são removidos.
+            </li>
+            <li>
+                <strong>Sua senha</strong> — o hash é apagado, encerrando o acesso.
+            </li>
+            <li>
+                <strong>Hospedagens já realizadas</strong> — o registro permanece, mas
+                <em>anonimizado</em>: continua existindo quanto foi consumido e em qual
+                apartamento, sem qualquer vínculo com sua identidade. A legislação fiscal
+                exige essa guarda, e o Art. 12 da LGPD trata dado anonimizado como não
+                sendo mais dado pessoal.
+            </li>
+        </ul>
+
+        <p class="text-muted">
+            Se você nunca se hospedou, não há registro a preservar e seu cadastro é apagado
+            por completo.
+        </p>
+
+        @* PT: Os dois bloqueios existem porque uma relação em aberto ainda precisa de quem
+               a identifique. A tela avisa antes para o titular não confirmar e ser recusado.
+           EN: Both blocks exist because an open relationship still needs someone identified.
+               The screen says so upfront so the user doesn't confirm and get refused. *@
+        <div class="alert alert-warning">
+            Não é possível excluir a conta enquanto houver uma <strong>estadia em aberto</strong>
+            ou uma <strong>reserva pendente</strong>. Resolva-as com a recepção primeiro.
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <form asp-action="ExcluirContaConfirmado" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger">Confirmar exclusão</button>
+            </form>
+            <a class="btn btn-outline-secondary" asp-action="MeusDados">Cancelar</a>
+        </div>
+
+    </div>
+</div>

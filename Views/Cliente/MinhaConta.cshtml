@@ -3,7 +3,10 @@
 @{ var reservas = ViewData["Reservas"] as IEnumerable<Reserva>; }
 
 <p class="section-eyebrow">SisHospedar</p>
-<h2>Minha Conta</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h2 class="mb-0">Minha Conta</h2>
+    <a class="btn btn-outline-dark btn-sm" asp-action="MeusDados">Meus dados e privacidade</a>
+</div>
 
 @if (Model == null)
 {

@@ -1,0 +1,146 @@
+@model SisHospedar.Services.DadosPessoaisHospede
+@{
+    ViewData["Title"] = "Meus dados";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-lg-9">
+
+        <p class="section-eyebrow">LGPD</p>
+        <h2 class="mb-1">Meus dados</h2>
+        <p class="text-muted">
+            Tudo o que o SisHospedar guarda sobre você. Detalhes sobre finalidade e prazo de
+            guarda estão no <a asp-controller="Privacidade" asp-action="Index">Aviso de Privacidade</a>.
+        </p>
+
+        <div class="card mb-4 mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Cadastro</h5>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Nome</dt>
+                    <dd class="col-sm-8">@Model.Nome</dd>
+
+                    <dt class="col-sm-4">CPF</dt>
+                    <dd class="col-sm-8">@Model.Cpf</dd>
+
+                    <dt class="col-sm-4">Telefone</dt>
+                    <dd class="col-sm-8">@Model.Telefone</dd>
+
+                    <dt class="col-sm-4">Data de nascimento</dt>
+                    <dd class="col-sm-8">@Model.DataNascimento.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-4">E-mail</dt>
+                    <dd class="col-sm-8">@(Model.Email ?? "—")</dd>
+
+                    <dt class="col-sm-4">Login</dt>
+                    <dd class="col-sm-8">@(Model.Login ?? "—")</dd>
+
+                    @* PT: Dizer o que NÃO está guardado é parte da transparência: a dúvida
+                           mais comum de quem lê uma tela dessas é "e minha senha?".
+                       EN: Saying what is NOT stored is part of transparency: the most common
+                           question from someone reading a screen like this is "what about my
+                           password?". *@
+                    <dt class="col-sm-4">Senha</dt>
+                    <dd class="col-sm-8 text-muted">Não armazenada — guardamos apenas um hash criptográfico dela.</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Reservas (@Model.Reservas.Count)</h5>
+                @if (Model.Reservas.Count == 0)
+                {
+                    <p class="text-muted mb-0">Nenhuma reserva registrada.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Apartamento</th>
+                                    <th>Entrada</th>
+                                    <th>Saída prevista</th>
+                                    <th>Situação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Reservas)
+                                {
+                                    <tr>
+                                        <td>@r.Apartamento</td>
+                                        <td>@r.DataEntrada.ToString("dd/MM/yyyy")</td>
+                                        <td>@r.DataSaidaPrevista.ToString("dd/MM/yyyy")</td>
+                                        <td>@r.Situacao</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Hospedagens (@Model.Hospedagens.Count)</h5>
+                @if (Model.Hospedagens.Count == 0)
+                {
+                    <p class="text-muted mb-0">Nenhuma hospedagem registrada.</p>
+                }
+                else
+                {
+                    foreach (var h in Model.Hospedagens)
+                    {
+                        <div class="mb-3">
+                            <strong>Apartamento @h.Apartamento</strong> —
+                            @h.DataEntrada.ToString("dd/MM/yyyy")
+                            @(h.DataSaida.HasValue ? $"a {h.DataSaida.Value:dd/MM/yyyy}" : "(em aberto)")
+                            @if (h.Finalizada)
+                            {
+                                <span class="badge bg-secondary">Finalizada</span>
+                            }
+
+                            @if (h.Consumos.Count > 0)
+                            {
+                                <ul class="mt-2 mb-0 text-muted" style="font-size:.9rem;">
+                                    @foreach (var c in h.Consumos)
+                                    {
+                                        <li>@c.Quantidade × @c.Produto — @c.ValorTotal.ToString("C")</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Levar meus dados</h5>
+                <p class="text-muted">
+                    Baixe tudo o que está acima em um arquivo JSON — formato aberto, que pode
+                    ser lido por outro sistema.
+                </p>
+                <a class="btn btn-outline-dark" asp-action="ExportarDados">Baixar meus dados (JSON)</a>
+            </div>
+        </div>
+
+        <div class="card mb-4 border-danger">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Excluir minha conta</h5>
+                <p class="text-muted mb-3">
+                    Remove seus dados pessoais do sistema. Se você já teve alguma hospedagem,
+                    o registro dela é mantido de forma anonimizada, sem ligação com você,
+                    porque a legislação fiscal exige essa guarda.
+                </p>
+                <a class="btn btn-outline-danger" asp-action="ExcluirConta">Quero excluir minha conta</a>
+            </div>
+        </div>
+
+        <p><a asp-action="MinhaConta">&larr; Voltar para Minha Conta</a></p>
+
+    </div>
+</div>
