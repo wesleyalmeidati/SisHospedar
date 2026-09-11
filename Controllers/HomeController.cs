@@ -104,7 +104,20 @@ namespace SisHospedar.Controllers
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public IActionResult Error() => View();
 
-        public IActionResult Login() => View();
+        // PT: As duas portas do login único precisam tratar returnUrl igual — o handler de
+        //     cookie anexa esse parâmetro ao redirecionar quem não está autenticado, e até
+        //     aqui ninguém o lia: a pessoa entrava e caía no painel, perdendo a página que
+        //     tentava acessar. Ver o mesmo tratamento em ClienteController.Login.
+        // EN: Both doors of the unified login must handle returnUrl the same way — the
+        //     cookie handler appends that parameter when redirecting an unauthenticated
+        //     visitor, and until now nobody read it: the person signed in and landed on the
+        //     dashboard, losing the page they were trying to reach. See the matching
+        //     handling in ClienteController.Login.
+        public IActionResult Login(string? returnUrl)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
 
         // PT: Login único — não sabe (nem precisa saber) se quem está digitando é
         //     funcionário ou hóspede. IAutenticacaoService tenta as duas identidades
@@ -116,12 +129,19 @@ namespace SisHospedar.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("AutenticacaoPublica")]
-        public async Task<IActionResult> Login(string login, string senha)
+        public async Task<IActionResult> Login(string login, string senha, string? returnUrl)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             var (resultado, tipo) = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
 
             if (tipo == TipoIdentidadeLogada.Funcionario) return RedirectToAction("Index", "Painel");
-            if (tipo == TipoIdentidadeLogada.Hospede) return RedirectToAction("MinhaConta", "Cliente");
+
+            if (tipo == TipoIdentidadeLogada.Hospede)
+            {
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return Redirect(returnUrl);
+                return RedirectToAction("MinhaConta", "Cliente");
+            }
 
             ModelState.AddModelError("", resultado == ResultadoLogin.ContaBloqueada
                 ? "Conta temporariamente bloqueada após várias tentativas inválidas. Tente novamente mais tarde ou redefina sua senha."

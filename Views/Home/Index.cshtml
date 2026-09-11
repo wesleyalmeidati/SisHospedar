@@ -63,13 +63,16 @@
         <h1 class="hero-title">Conforto e hospitalidade em cada detalhe.</h1>
         <p class="hero-lead">Reserve sua estadia em poucos minutos e viva uma experiência pensada para o seu descanso.</p>
         <div class="hero-actions">
-            @* PT: Um botão só — [RequerHospede] em ReservaController.Create já redireciona
-                   quem não está logado para /Cliente/Login (com ReturnUrl de volta pra cá),
-                   e a própria tela de login tem o link "Criar conta" pra quem é novo.
-               EN: Single button — [RequerHospede] on ReservaController.Create already
-                   redirects anyone not logged in to /Cliente/Login (with a ReturnUrl back
-                   here), and that login screen itself has the "Create account" link for
-                   new guests. *@
+            @* PT: Leva direto ao formulário de reserva, que é público. O visitante escolhe
+                   apartamento e datas antes de qualquer pedido de conta; a autenticação só
+                   aparece ao efetivar, levando a escolha junto (ver ReservaController.Create).
+                   Antes daqui saía para /Cliente/Login, e a pessoa via uma tela de senha sem
+                   nunca ter visto o que estava reservando.
+               EN: Goes straight to the booking form, which is public. The visitor picks room
+                   and dates before any account is asked for; authentication only shows up at
+                   the point of committing, carrying the choice along (see
+                   ReservaController.Create). This used to lead to /Cliente/Login, where the
+                   person met a password screen without ever seeing what they were booking. *@
             <a class="btn btn-brass btn-lg" asp-controller="Reserva" asp-action="Create">Reservar Agora</a>
         </div>
     </div>

@@ -1,4 +1,5 @@
 using System.Net;
+using SisHospedar.Models;
 
 namespace SisHospedar.Tests;
 
@@ -78,18 +79,57 @@ public class AutorizacaoFuncionarioTests : TestesIntegracaoBase
     }
 
     [Fact]
-    public async Task Funcionario_AcessandoReservaCreateDoHospede_RedirecionaParaLoginDeCliente()
+    public async Task Funcionario_VeOFormularioDeReservaMasNaoCriaComoHospede()
     {
-        // PT: /Reserva/Create pertence à identidade de hóspede, não à de funcionário —
-        //     mesmo controller, filtro aplicado por método, não pela classe.
-        // EN: /Reserva/Create belongs to the guest identity, not the employee one —
-        //     same controller, filter applied per-method, not on the class.
+        // PT: A tela de reserva passou a ser pública, para o visitante escolher antes de
+        //     criar conta — então um funcionário também a enxerga, e isso não é problema:
+        //     é um formulário, não um dado de outra identidade.
+        //     A separação entre as identidades continua valendo onde importa: no POST, que
+        //     é a ação que cria a reserva. O cookie de funcionário é de outro esquema, então
+        //     AuthenticateAsync(Esquemas.Hospede) falha e ele é mandado ao login de hóspede
+        //     em vez de a reserva ser criada em nome de alguém.
+        // EN: The booking screen became public so a visitor can choose before creating an
+        //     account — so an employee sees it too, and that's fine: it's a form, not
+        //     another identity's data.
+        //     Identity separation still holds where it matters: on the POST, the action that
+        //     creates the booking. The employee cookie belongs to a different scheme, so
+        //     AuthenticateAsync(Esquemas.Hospede) fails and they're sent to the guest login
+        //     instead of a booking being created in someone's name.
+        var apartamentoId = 0;
+        await Factory.UsandoContextoAsync(async db =>
+        {
+            var apartamento = new Apartamento
+            {
+                Numero = $"F{Guid.NewGuid():N}"[..9],
+                Capacidade = 2,
+                ValorDiaria = 150m,
+                Status = StatusApartamento.Disponivel
+            };
+            db.Apartamentos.Add(apartamento);
+            await db.SaveChangesAsync();
+            apartamentoId = apartamento.ApartamentoId;
+        });
+
         var client = CriarCliente();
         await LoginComoAsync(client, "matias.sampaio", "Senha123");
 
-        var resposta = await client.GetAsync("/Reserva/Create");
+        var pagina = await client.GetAsync("/Reserva/Create");
+        Assert.Equal(HttpStatusCode.OK, pagina.StatusCode);
+
+        var resposta = await PostComAntiforgeryAsync(client, "/Reserva/Create", "/Reserva/Create",
+            new Dictionary<string, string>
+            {
+                ["ApartamentoId"] = apartamentoId.ToString(),
+                ["DataEntrada"] = DateTime.Today.AddDays(3).ToString("yyyy-MM-dd"),
+                ["DataSaidaPrevista"] = DateTime.Today.AddDays(5).ToString("yyyy-MM-dd")
+            });
 
         Assert.Equal(HttpStatusCode.Redirect, resposta.StatusCode);
-        Assert.Equal("/Cliente/Login", resposta.Headers.Location?.AbsolutePath);
+
+        // PT: Location vem relativo aqui porque o redirect parte do próprio controller, não
+        //     do handler de cookie — Uri.AbsolutePath lançaria numa URI relativa.
+        // EN: Location is relative here because the redirect comes from the controller
+        //     itself, not the cookie handler — Uri.AbsolutePath would throw on a relative URI.
+        Assert.StartsWith("/Cliente/Login", resposta.Headers.Location!.ToString());
     }
 }

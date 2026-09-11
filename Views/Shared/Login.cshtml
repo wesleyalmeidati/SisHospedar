@@ -11,10 +11,36 @@
        render this exact file. *@
 <div class="auth-shell">
     <div class="auth-card">
+        @{
+            var retorno = ViewData["ReturnUrl"] as string;
+            var vindoDeReserva = retorno != null && retorno.Contains("/Reserva/", StringComparison.OrdinalIgnoreCase);
+        }
+
         <p class="auth-eyebrow">SisHospedar</p>
         <h2 class="auth-title">Entrar</h2>
+
+        @* PT: Dizer por que o login apareceu. Quem clicou em "Reservar" e viu uma tela de
+               senha sem explicação acha que perdeu o que preencheu — e desiste. O aviso
+               deixa claro que a reserva continua ali esperando.
+           EN: Say why the login appeared. Someone who clicked "Book" and hit a password
+               screen with no explanation assumes they lost what they filled in — and gives
+               up. This note makes clear the booking is still waiting for them. *@
+        @if (vindoDeReserva)
+        {
+            <div class="alert alert-secondary" style="font-size:.9rem;">
+                Sua reserva está guardada. Falta só entrar na sua conta para concluir —
+                ou <a asp-controller="Cliente" asp-action="Registrar" asp-route-returnUrl="@retorno">criar uma conta</a>,
+                se ainda não tiver.
+            </div>
+        }
+
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
         <form asp-action="Login" method="post">
+            @* PT: Sem este campo, o retorno se perde no POST e a pessoa cai em "Minha
+                   Conta" — exatamente o que acontecia antes desta mudança.
+               EN: Without this field the return is lost on POST and the person lands in "My
+                   Account" — exactly what used to happen before this change. *@
+            <input type="hidden" name="returnUrl" value="@retorno" />
             <div class="mb-3">
                 <label class="form-label">Login</label>
                 <input name="login" class="form-control" required />
@@ -28,7 +54,8 @@
                 <a asp-controller="Conta" asp-action="EsqueciSenha">Esqueci minha senha</a>
             </p>
             <p class="text-center mt-2 mb-0" style="font-size:.88rem;">
-                Ainda não tem conta? <a asp-controller="Cliente" asp-action="Registrar">Criar conta</a>
+                Ainda não tem conta?
+                <a asp-controller="Cliente" asp-action="Registrar" asp-route-returnUrl="@retorno">Criar conta</a>
             </p>
         </form>
     </div>

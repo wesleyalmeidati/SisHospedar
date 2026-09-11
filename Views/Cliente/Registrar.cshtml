@@ -16,7 +16,12 @@
                ClienteController.Registrar and CpfValidoAttribute in Models/Hospede.cs).
                Never rely on the HTML attribute alone: it's trivially bypassed by
                disabling JS or posting straight to the route. *@
+        @* PT: Mesmo motivo do campo em Shared/Login.cshtml — sem ele, quem veio de uma
+               reserva e escolheu criar conta perde a escolha ao enviar o cadastro.
+           EN: Same reason as the field in Shared/Login.cshtml — without it, someone who
+               came from a booking and chose to register loses their choice on submit. *@
         <form asp-action="Registrar" method="post">
+            <input type="hidden" name="returnUrl" value="@(ViewData["ReturnUrl"] as string)" />
             <div class="mb-3">
                 <label asp-for="Nome" class="form-label"></label>
                 <input asp-for="Nome" class="form-control" required />
@@ -53,7 +58,7 @@
             </div>
             <button type="submit" class="btn btn-primary w-100">Criar Conta</button>
             <p class="text-center mt-4 mb-0" style="font-size:.88rem;">
-                Já tem conta? <a asp-action="Login">Entrar</a>
+                Já tem conta? <a asp-action="Login" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)">Entrar</a>
             </p>
         </form>
     </div>

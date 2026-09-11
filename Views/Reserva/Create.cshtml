@@ -1,10 +1,31 @@
 @model Reserva
-@{ ViewData["Title"] = "Fazer Reserva"; }
+@{
+    ViewData["Title"] = "Fazer Reserva";
+    var autenticado = ViewData["Autenticado"] as bool? ?? false;
+}
 <div class="row justify-content-center">
     <div class="col-md-5">
         <p class="section-eyebrow">SisHospedar</p>
         <h2>Fazer uma Reserva</h2>
+
+        @* PT: O visitante anônimo chega até aqui de propósito (ver ReservaController.Create).
+               Este aviso existe para ele não ser surpreendido pela tela de login no envio:
+               avisar antes que a conta será pedida no fim é o que evita a sensação de ter
+               perdido o preenchimento.
+           EN: An anonymous visitor deliberately reaches this page (see
+               ReservaController.Create). This note exists so the login screen on submit
+               doesn't catch them off guard: saying up front that an account will be asked
+               for at the end is what prevents the feeling of having lost their input. *@
+        @if (!autenticado)
+        {
+            <div class="alert alert-secondary" style="font-size:.9rem;">
+                Escolha o apartamento e as datas. No próximo passo você entra na sua conta
+                ou cria uma — <strong>sua escolha fica guardada</strong>.
+            </div>
+        }
+
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
         <form asp-action="Create" method="post">
             <div class="mb-3">
                 <label class="form-label">Apartamento</label>
@@ -13,12 +34,23 @@
             <div class="mb-3">
                 <label asp-for="DataEntrada" class="form-label"></label>
                 <input asp-for="DataEntrada" class="form-control" type="date" />
+                <span asp-validation-for="DataEntrada" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="DataSaidaPrevista" class="form-label"></label>
                 <input asp-for="DataSaidaPrevista" class="form-control" type="date" />
+                <span asp-validation-for="DataSaidaPrevista" class="text-danger"></span>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Solicitar Reserva</button>
+
+            @* PT: O rótulo muda conforme o estado. "Solicitar Reserva" para quem está
+                   anônimo prometeria uma conclusão que não vai acontecer naquele clique —
+                   o botão tem que dizer o que de fato acontece a seguir.
+               EN: The label changes with state. "Request booking" for an anonymous visitor
+                   would promise a completion that won't happen on that click — the button
+                   has to say what actually happens next. *@
+            <button type="submit" class="btn btn-primary w-100">
+                @(autenticado ? "Solicitar Reserva" : "Continuar")
+            </button>
         </form>
     </div>
 </div>

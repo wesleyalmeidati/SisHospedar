@@ -41,7 +41,17 @@ namespace SisHospedar.Controllers
             _privacidade = privacidade;
         }
 
-        public IActionResult Registrar() => View();
+        // PT: returnUrl atravessa o cadastro inteiro para que quem chegou aqui a partir de
+        //     uma reserva volte para ela depois de criar a conta, em vez de ser largado em
+        //     "Minha Conta" sem entender onde foi parar a escolha que tinha feito.
+        // EN: returnUrl travels through the whole sign-up so that someone who arrived here
+        //     from a booking goes back to it after creating their account, instead of being
+        //     dropped in "My Account" wondering where the choice they made went.
+        public IActionResult Registrar(string? returnUrl)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
 
         // PT: Cria a conta do hóspede via UserManager<Hospede> (hash e persistência
         //     ficam por conta do Identity, através de EntityUserStore) e já assina o
@@ -53,8 +63,9 @@ namespace SisHospedar.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("CadastroPublico")]
-        public async Task<IActionResult> Registrar(Hospede hospede, string senha)
+        public async Task<IActionResult> Registrar(Hospede hospede, string senha, string? returnUrl)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             ModelState.Remove(nameof(Hospede.SenhaHash));
 
             // PT: Email e Login são [Required] só aqui, não no model (Hospede) — a
@@ -112,7 +123,7 @@ namespace SisHospedar.Controllers
                     await AssinarCookieAsync(hospede);
 
                     TempData["Sucesso"] = "Conta criada com sucesso! Bem-vindo(a) ao SisHospedar.";
-                    return RedirectToAction("Create", "Reserva");
+                    return RedirecionarPara(returnUrl) ?? RedirectToAction("Create", "Reserva");
                 }
                 foreach (var erro in resultado.Errors)
                     ModelState.AddModelError("senha", erro.Description);
@@ -120,7 +131,22 @@ namespace SisHospedar.Controllers
             return View(hospede);
         }
 
-        public IActionResult Login() => View();
+        public IActionResult Login(string? returnUrl)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        // PT: Só aceita caminho local. returnUrl vem da URL, ou seja, é entrada do usuário:
+        //     sem esta checagem, um link malicioso poderia usar a tela de login do site
+        //     para jogar a pessoa em outro domínio logo após ela digitar a senha — o
+        //     clássico open redirect usado em phishing.
+        // EN: Local paths only. returnUrl comes from the URL, i.e. user input: without this
+        //     check, a malicious link could use the site's own login screen to send someone
+        //     to another domain right after they type their password — the classic open
+        //     redirect used in phishing.
+        private IActionResult? RedirecionarPara(string? returnUrl) =>
+            !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : null;
 
         // PT: Mesmo login único de HomeController.Login — quem digitar credenciais de
         //     funcionário aqui também entra normalmente, só que como funcionário.
@@ -129,11 +155,20 @@ namespace SisHospedar.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("AutenticacaoPublica")]
-        public async Task<IActionResult> Login(string login, string senha)
+        public async Task<IActionResult> Login(string login, string senha, string? returnUrl)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             var (resultado, tipo) = await _autenticacao.AutenticarAsync(HttpContext, login, senha);
 
-            if (tipo == TipoIdentidadeLogada.Hospede) return RedirectToAction(nameof(MinhaConta));
+            if (tipo == TipoIdentidadeLogada.Hospede)
+                return RedirecionarPara(returnUrl) ?? RedirectToAction(nameof(MinhaConta));
+
+            // PT: Funcionário ignora o returnUrl de propósito. Se ele entrar por um fluxo de
+            //     reserva de hóspede, mandá-lo para lá seria sem sentido — a tela pertence à
+            //     outra identidade, e ele cairia num formulário que não pode concluir.
+            // EN: An employee deliberately ignores returnUrl. If they log in through a guest
+            //     booking flow, sending them there would make no sense — the screen belongs
+            //     to the other identity, and they'd land on a form they can't complete.
             if (tipo == TipoIdentidadeLogada.Funcionario) return RedirectToAction("Index", "Painel");
 
             ModelState.AddModelError("", resultado == ResultadoLogin.ContaBloqueada
