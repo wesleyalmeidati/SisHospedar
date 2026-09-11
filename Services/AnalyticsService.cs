@@ -90,17 +90,44 @@ namespace SisHospedar.Services
         public async Task<IReadOnlyList<VisitaResumo>> ResumoAsync(int dias)
         {
             var desde = DateTime.Today.AddDays(-dias);
-            return await _context.VisitasPagina
+
+            // PT: A projeção intermediária em tipo anônimo não é preciosismo — é o que torna
+            //     a consulta traduzível. Projetar direto no record VisitaResumo e ordenar por
+            //     uma propriedade dele faz o EF Core desistir da tradução e lançar em tempo
+            //     de execução ("could not be translated"), porque ele não consegue relacionar
+            //     o parâmetro do construtor com a coluna agregada. Com tipo anônimo o
+            //     OrderByDescending/Take acontecem no banco, e o record é montado depois, em
+            //     memória, sobre as 15 linhas já escolhidas.
+            //     Isso passou despercebido até produção porque nenhum teste abria o /Painel
+            //     como Gerente, que é o único caminho que chega aqui — PainelTests existe
+            //     agora exatamente para fechar essa lacuna.
+            // EN: The intermediate anonymous-type projection isn't fussiness — it's what makes
+            //     the query translatable. Projecting straight into the VisitaResumo record and
+            //     ordering by one of its properties makes EF Core give up on translation and
+            //     throw at runtime ("could not be translated"), because it can't relate the
+            //     constructor parameter back to the aggregated column. With an anonymous type
+            //     the OrderByDescending/Take happen in the database, and the record is built
+            //     afterwards, in memory, over the 15 rows already selected.
+            //     This slipped through to production because no test opened /Painel as a
+            //     Gerente, the only path that reaches here — PainelTests now exists precisely
+            //     to close that gap.
+            var agregado = await _context.VisitasPagina
                 .AsNoTracking()
                 .Where(v => v.Data >= desde)
                 .GroupBy(v => v.Caminho)
-                .Select(g => new VisitaResumo(
-                    g.Key,
-                    g.Sum(v => v.Total),
-                    g.Sum(v => v.TotalRecorrentes)))
-                .OrderByDescending(r => r.Total)
+                .Select(g => new
+                {
+                    Caminho = g.Key,
+                    Total = g.Sum(v => v.Total),
+                    Recorrentes = g.Sum(v => v.TotalRecorrentes)
+                })
+                .OrderByDescending(x => x.Total)
                 .Take(15)
                 .ToListAsync();
+
+            return agregado
+                .Select(x => new VisitaResumo(x.Caminho, x.Total, x.Recorrentes))
+                .ToList();
         }
 
         public async Task<int> TotalNoPeriodoAsync(int dias)
