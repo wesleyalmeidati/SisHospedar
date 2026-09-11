@@ -70,6 +70,37 @@ namespace SisHospedar.Migrations
                     b.ToTable("Apartamentos");
                 });
 
+            modelBuilder.Entity("SisHospedar.Models.ConsentimentoCookie", b =>
+                {
+                    b.Property<int>("ConsentimentoCookieId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsentimentoCookieId"));
+
+                    b.Property<bool>("Aceito")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("DataRegistro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdentificadorAnonimo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("VersaoPolitica")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("ConsentimentoCookieId");
+
+                    b.HasIndex("IdentificadorAnonimo");
+
+                    b.ToTable("ConsentimentosCookie");
+                });
+
             modelBuilder.Entity("SisHospedar.Models.Consumo", b =>
                 {
                     b.Property<int>("ConsumoId")
@@ -314,6 +345,36 @@ namespace SisHospedar.Migrations
                     b.HasIndex("HospedeId");
 
                     b.ToTable("Reservas");
+                });
+
+            modelBuilder.Entity("SisHospedar.Models.VisitaPagina", b =>
+                {
+                    b.Property<int>("VisitaPaginaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VisitaPaginaId"));
+
+                    b.Property<string>("Caminho")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("Data")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Total")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalRecorrentes")
+                        .HasColumnType("int");
+
+                    b.HasKey("VisitaPaginaId");
+
+                    b.HasIndex("Caminho", "Data")
+                        .IsUnique();
+
+                    b.ToTable("VisitasPagina");
                 });
 
             modelBuilder.Entity("SisHospedar.Models.Consumo", b =>

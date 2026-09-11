@@ -74,6 +74,67 @@
         <a class="btn btn-outline-secondary" asp-controller="Funcionario" asp-action="Index">Gerenciar Funcionários</a>
         <a class="btn btn-outline-secondary" asp-controller="Reserva" asp-action="Index">Ver Reservas</a>
     </div>
+
+    var visitas = ViewData["VisitasPorPagina"] as IReadOnlyList<SisHospedar.Services.VisitaResumo>;
+
+    <div class="card mt-5">
+        <div class="card-body">
+            <h5 class="card-title mb-1">Audiência do site — últimos 30 dias</h5>
+            <p class="text-muted" style="font-size:.88rem;">
+                Medição própria, sem serviço externo. São contagens por página; não há
+                registro de visitantes individuais.
+                <a asp-controller="Privacidade" asp-action="Cookies">Como isso é medido</a>
+            </p>
+
+            <p class="mb-4">
+                Total de acessos: <strong>@ViewData["VisitasTotal"]</strong>
+            </p>
+
+            @if (visitas == null || visitas.Count == 0)
+            {
+                <p class="text-muted mb-0">
+                    Nenhum acesso registrado ainda. As contagens são gravadas em blocos, a
+                    cada minuto, então um acesso recente pode levar um instante para aparecer.
+                </p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Página</th>
+                                <th class="text-end">Acessos</th>
+                                @* PT: "Retornos" só cresce com consentimento — por isso a
+                                       coluna traz a explicação: zero aqui pode significar
+                                       "ninguém voltou" ou "ninguém autorizou a medição", e
+                                       confundir os dois levaria a conclusão errada.
+                                   EN: "Returns" only grows with consent — hence the note in
+                                       the column: a zero here can mean "nobody came back" or
+                                       "nobody allowed measurement", and confusing the two
+                                       would lead to a wrong conclusion. *@
+                                <th class="text-end">Retornos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in visitas)
+                            {
+                                <tr>
+                                    <td><code>@v.Caminho</code></td>
+                                    <td class="text-end">@v.Total</td>
+                                    <td class="text-end">@v.Recorrentes</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mt-3 mb-0" style="font-size:.84rem;">
+                    "Retornos" conta apenas visitantes que autorizaram o cookie de medição.
+                    Quem recusou aparece em "Acessos", mas sempre como visita nova.
+                </p>
+            }
+        </div>
+    </div>
 }
 else if (cargo == CargoFuncionario.Recepcionista)
 {

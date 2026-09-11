@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SisHospedar.Data;
 using SisHospedar.Filters;
 using SisHospedar.Models;
+using SisHospedar.Services;
 
 namespace SisHospedar.Controllers
 {
@@ -15,7 +16,13 @@ namespace SisHospedar.Controllers
     public class PainelController : Controller
     {
         private readonly AppDbContext _context;
-        public PainelController(AppDbContext context) => _context = context;
+        private readonly IAnalyticsService _analytics;
+
+        public PainelController(AppDbContext context, IAnalyticsService analytics)
+        {
+            _context = context;
+            _analytics = analytics;
+        }
 
         public async Task<IActionResult> Index()
         {
@@ -36,6 +43,17 @@ namespace SisHospedar.Controllers
                     ViewData["ReservasPendentes"] = await _context.Reservas.CountAsync(r => r.Status == StatusReserva.Pendente);
                     ViewData["TotalFuncionarios"] = await _context.Funcionarios.CountAsync();
                     ViewData["ChegadasHoje"] = await ObterChegadasHojeAsync();
+
+                    // PT: Audiência do site é informação de gestão, então aparece só para
+                    //     Administrador/Gerente. São números agregados por página — não há
+                    //     nada aqui sobre um visitante específico, nem haveria como: o que
+                    //     está no banco são contadores, não registros individuais.
+                    // EN: Site audience is management information, so it's shown only to
+                    //     Administrador/Gerente. These are per-page aggregates — there is
+                    //     nothing here about a specific visitor, nor could there be: what's
+                    //     in the database are counters, not individual records.
+                    ViewData["VisitasTotal"] = await _analytics.TotalNoPeriodoAsync(30);
+                    ViewData["VisitasPorPagina"] = await _analytics.ResumoAsync(30);
                     break;
 
                 case CargoFuncionario.Recepcionista:

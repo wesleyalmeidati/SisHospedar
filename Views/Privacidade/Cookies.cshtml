@@ -16,26 +16,31 @@
 
         <h4 class="mt-5">A versão curta</h4>
         <p>
-            O SisHospedar usa <strong>quatro cookies, todos estritamente necessários</strong>
-            para o site funcionar. Não há cookies de análise de audiência, de publicidade ou
-            de rastreamento, e <strong>nenhum cookie de terceiros</strong> é gravado —
-            todos vêm do próprio site.
+            O SisHospedar usa <strong>cinco cookies necessários</strong> ao funcionamento e
+            <strong>um opcional</strong>, que só existe se você autorizar. Não há
+            publicidade, não há perfilamento e <strong>nenhum cookie de terceiros</strong> é
+            gravado — todos vêm do próprio site.
+        </p>
+        <p>
+            A medição de audiência é feita pelo próprio SisHospedar. Não usamos Google
+            Analytics nem serviço semelhante, então <strong>nenhum dado seu sai daqui</strong>
+            e não há transferência internacional envolvida.
         </p>
 
-        @* PT: Explicar a ausência do banner é mais útil que exibir um. A referência visual
-               que as pessoas têm (Airbnb, lojas) oferece "aceitar todos" x "só o
-               necessário", e a ausência disso aqui parece falha se não for explicada.
-           EN: Explaining the missing banner is more useful than showing one. The visual
-               reference people have (Airbnb, shops) offers "accept all" vs "necessary
-               only", and its absence here looks like an oversight unless explained. *@
+        @* PT: Explicar o que o banner de fato controla evita a leitura cínica ("mais um
+               banner"). O ponto que diferencia este de tantos outros é o bloqueio prévio:
+               o cookie opcional não é gravado antes da resposta.
+           EN: Explaining what the banner actually controls avoids the cynical reading ("yet
+               another banner"). What sets this one apart from so many others is the prior
+               gate: the optional cookie is not written before the answer. *@
         <div class="alert alert-secondary">
-            <strong>Por que não existe um banner pedindo seu consentimento?</strong><br />
-            Porque não haveria escolha real a oferecer. Banners de cookies existem para que
-            você possa recusar os cookies <em>opcionais</em> — os de medição e publicidade.
-            Como aqui só existem os necessários ao funcionamento, que a legislação dispensa
-            de consentimento, os botões "aceitar todos" e "somente o necessário" levariam
-            exatamente ao mesmo resultado. Um banner assim seria só um incômodo simulando
-            uma decisão que não existe.
+            <strong>O que o banner realmente controla</strong><br />
+            Os cookies necessários não aparecem no banner porque não dependem de
+            consentimento — sem eles o login e os formulários não funcionam. O banner decide
+            apenas sobre o cookie de medição, e ele <strong>não é gravado antes da sua
+            resposta</strong>: se você recusar, ele nunca chega a existir. Recusar é um
+            clique, exatamente como aceitar, e a decisão pode ser mudada quando quiser em
+            <a asp-action="Preferencias">Preferências de cookies</a>.
         </div>
 
         <h4 class="mt-5">Cookies utilizados</h4>
@@ -82,17 +87,58 @@
                         </td>
                         <td>Apagado assim que a mensagem é exibida</td>
                     </tr>
+                    <tr>
+                        <td><code>SisHospedar.Consentimento</code></td>
+                        <td>
+                            Guarda a sua resposta ao banner — aceitou ou recusou. É
+                            necessário justamente para respeitar a escolha: sem ele, o site
+                            não saberia o que você decidiu e voltaria a perguntar a cada
+                            página.
+                        </td>
+                        <td>12 meses</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
 
-        <h4 class="mt-5">Uma coisa que não é cookie</h4>
+        <h4 class="mt-5">O cookie opcional</h4>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cookie</th>
+                        <th>Para que serve</th>
+                        <th>Duração</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>SisHospedar.Visitante</code></td>
+                        <td>
+                            Guarda um identificador aleatório para que o site consiga
+                            distinguir uma visita nova de um retorno. Não contém seu nome,
+                            e-mail ou qualquer dado seu, e não é ligado à sua conta.
+                            <strong>Só é gravado se você aceitar</strong>, e é apagado se
+                            você mudar de ideia.
+                        </td>
+                        <td>12 meses</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4 class="mt-5">O que medimos, e o que não medimos</h4>
         <p>
-            Ao fechar a barra de aviso sobre cookies, o site guarda essa preferência no
-            <strong>armazenamento local</strong> do navegador, não em um cookie. É uma
-            escolha deliberada: gravar um cookie apenas para lembrar que você leu o aviso
-            sobre cookies acrescentaria ao site exatamente o tipo de coisa que o aviso diz
-            não existir. Esse registro fica só no seu aparelho e nunca é enviado ao servidor.
+            Guardamos quantas vezes cada página foi aberta por dia e quantos desses acessos
+            vieram de quem já tinha visitado antes. <strong>Só isso.</strong> Não gravamos
+            endereço IP, não registramos o que você clicou nem por onde navegou, e não há
+            gravação de sessão.
+        </p>
+        <p>
+            A contagem de acessos por página acontece mesmo sem o cookie opcional — ela é um
+            número agregado, sem nada que identifique alguém, e por isso não depende de
+            consentimento. O que o cookie acrescenta é apenas a distinção entre visitante
+            novo e recorrente.
         </p>
 
         <h4 class="mt-5">Como recusar ou apagar</h4>
@@ -104,12 +150,12 @@
             funcionando normalmente.
         </p>
 
-        <h4 class="mt-5">Se isso mudar</h4>
+        <h4 class="mt-5">Como mudar de ideia</h4>
         <p>
-            Caso o SisHospedar venha a adotar alguma ferramenta de medição de audiência, aí
-            sim passará a existir cookie opcional — e, com ele, a obrigação de pedir seu
-            consentimento antes de gravá-lo, com recusa tão fácil quanto a aceitação. Esta
-            página seria atualizada e um controle de preferências de verdade apareceria.
+            A qualquer momento, em <a asp-action="Preferencias">Preferências de cookies</a>.
+            Desativar não apenas interrompe o uso: o identificador é <strong>apagado do seu
+            navegador na hora</strong>. E a escolha vale por navegador — se você acessar de
+            outro aparelho, a pergunta aparece de novo.
         </p>
 
         <p class="mt-5">

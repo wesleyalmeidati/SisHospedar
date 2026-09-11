@@ -143,32 +143,58 @@
         </div>
     </footer>
 
-    @* PT: Barra informativa, não de consentimento — o site só grava cookies necessários,
-           que a lei dispensa de consentimento, então não há o que aceitar ou recusar. Um
-           par "aceitar todos / somente o necessário" aqui levaria ao mesmo resultado nos
-           dois botões, simulando uma escolha inexistente.
-           Começa com "hidden": quem já dispensou nunca a vê reaparecer, e se o JavaScript
-           estiver bloqueado ela simplesmente não aparece, em vez de travar sem fechar.
-       EN: An informational bar, not a consent one — the site only writes necessary cookies,
-           which the law exempts from consent, so there is nothing to accept or refuse. An
-           "accept all / necessary only" pair here would lead to the same result on both
-           buttons, faking a choice that doesn't exist.
-           It starts "hidden": anyone who already dismissed it never sees it again, and if
-           JavaScript is blocked it simply doesn't appear rather than being stuck open. *@
-    <div id="aviso-cookies" class="aviso-cookies" role="region" aria-label="Aviso sobre cookies" hidden>
-        <div class="aviso-cookies-conteudo">
-            <p class="aviso-cookies-texto">
-                Este site usa <strong>apenas cookies necessários</strong> para manter você
-                conectado e proteger os formulários. Não há rastreamento, publicidade nem
-                cookies de terceiros — por isso não pedimos consentimento.
-                <a asp-controller="Privacidade" asp-action="Cookies">Ver a Política de Cookies</a>
-            </p>
-            <button type="button" id="aviso-cookies-fechar" class="btn btn-dark btn-sm">Entendi</button>
+    @* PT: Banner de consentimento real. Quatro decisões aqui, todas deliberadas:
+           1) É renderizado pelo servidor só enquanto não houver decisão gravada. Não usa
+              JavaScript nenhum, então funciona com JS bloqueado — e some sozinho depois da
+              escolha, sem precisar de localStorage.
+           2) Aceitar e Recusar são dois botões irmãos, mesmo tamanho e mesma proeminência.
+              Esconder a recusa atrás de "gerenciar preferências" é o padrão escuro que a
+              ANPD condena: recusar tem que ser tão fácil quanto aceitar.
+           3) São formulários POST com antiforgery, não links — a escolha altera estado.
+           4) O cookie de medição NÃO é gravado antes desta decisão. É esse bloqueio prévio
+              que a maioria dos sites brasileiros erra, gravando primeiro e perguntando
+              depois.
+       EN: A real consent banner. Four deliberate decisions here:
+           1) Server-rendered only while no decision has been stored. It uses no JavaScript
+              at all, so it works with JS blocked — and disappears on its own after the
+              choice, with no localStorage needed.
+           2) Accept and Refuse are sibling buttons, same size and same prominence. Hiding
+              refusal behind "manage preferences" is the dark pattern the ANPD objects to:
+              refusing has to be as easy as accepting.
+           3) They are POST forms with antiforgery, not links — the choice changes state.
+           4) The measurement cookie is NOT written before this decision. That prior gate is
+              what most Brazilian sites get wrong, writing first and asking afterwards. *@
+    @if (Context.Request.Cookies[SisHospedar.Services.Medicao.CookieConsentimento] == null)
+    {
+        var retorno = Context.Request.Path + Context.Request.QueryString;
+        <div class="aviso-cookies" role="region" aria-label="Consentimento de cookies">
+            <div class="aviso-cookies-conteudo">
+                <p class="aviso-cookies-texto">
+                    Os cookies que mantêm você conectado e protegem os formulários são
+                    necessários e estão sempre ativos. Além deles, podemos usar um cookie
+                    <strong>opcional</strong> para medir quantas pessoas voltam ao site —
+                    sem rastreamento, sem publicidade e sem enviar nada a terceiros.
+                    <a asp-controller="Privacidade" asp-action="Cookies">Entenda cada cookie</a>
+                </p>
+                <div class="aviso-cookies-acoes">
+                    <form asp-controller="Privacidade" asp-action="Consentimento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="aceito" value="false" />
+                        <input type="hidden" name="returnUrl" value="@retorno" />
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Recusar</button>
+                    </form>
+                    <form asp-controller="Privacidade" asp-action="Consentimento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="aceito" value="true" />
+                        <input type="hidden" name="returnUrl" value="@retorno" />
+                        <button type="submit" class="btn btn-primary btn-sm">Aceitar</button>
+                    </form>
+                </div>
+            </div>
         </div>
-    </div>
+    }
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

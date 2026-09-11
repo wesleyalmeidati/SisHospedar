@@ -40,6 +40,15 @@ namespace SisHospedar.Data
         public DbSet<Consumo> Consumos => Set<Consumo>();
         public DbSet<Reserva> Reservas => Set<Reserva>();
 
+        // PT: Medição de audiência própria — ver os comentários nas duas classes. Nenhuma
+        //     das duas guarda dado pessoal, e é por isso que elas podem viver no mesmo
+        //     banco sem contaminar o resto com obrigação de retenção.
+        // EN: First-party audience measurement — see the comments on both classes. Neither
+        //     stores personal data, which is why they can live in the same database without
+        //     contaminating the rest with retention obligations.
+        public DbSet<VisitaPagina> VisitasPagina => Set<VisitaPagina>();
+        public DbSet<ConsentimentoCookie> ConsentimentosCookie => Set<ConsentimentoCookie>();
+
         // PT: Configura índices únicos e as regras de exclusão (cascade/restrict) entre
         //     as entidades — ver CLAUDE.md para o resumo dessas regras.
         // EN: Configures unique indexes and delete rules (cascade/restrict) between
@@ -57,6 +66,22 @@ namespace SisHospedar.Data
             //     ContaController.EsqueciSenha, which checks Funcionario first and only
             //     falls back to Hospede if the same email also happens to exist in both.
             modelBuilder.Entity<Funcionario>().HasIndex(f => f.Email).IsUnique();
+
+            // PT: Único em (Caminho, Data) — é o que garante uma única linha por página por
+            //     dia e permite o incremento atômico em AnalyticsService (mesmo padrão da
+            //     baixa de estoque): se duas requisições simultâneas tentarem criar a linha
+            //     do dia, o banco recusa a segunda em vez de gerar contagem duplicada.
+            // EN: Unique on (Caminho, Data) — this is what guarantees a single row per page
+            //     per day and enables the atomic increment in AnalyticsService (same pattern
+            //     as the stock decrement): if two concurrent requests try to create the
+            //     day's row, the database rejects the second instead of producing a
+            //     duplicated count.
+            modelBuilder.Entity<VisitaPagina>()
+                .HasIndex(v => new { v.Caminho, v.Data })
+                .IsUnique();
+
+            modelBuilder.Entity<ConsentimentoCookie>()
+                .HasIndex(c => c.IdentificadorAnonimo);
             modelBuilder.Entity<Apartamento>().HasIndex(a => a.Numero).IsUnique();
 
             modelBuilder.Entity<Reserva>()

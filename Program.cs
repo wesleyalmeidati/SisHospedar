@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Authentication;
 using SisHospedar.Data;
+using SisHospedar.Middleware;
 using SisHospedar.Models;
 using SisHospedar.Services;
 
@@ -56,6 +57,19 @@ builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
 // EN: LGPD data-subject rights (access, portability and erasure) — see
 //     IPrivacidadeService, which explains why "delete" sometimes means anonymize.
 builder.Services.AddScoped<IPrivacidadeService, PrivacidadeService>();
+
+// PT: Medição de audiência própria, de primeira parte — nada é enviado a terceiros, então
+//     não há transferência internacional nem cookie de outro domínio. O buffer é singleton
+//     (acumula entre requisições), o serviço é scoped (usa o DbContext) e o FlushVisitas
+//     grava periodicamente — ver BufferVisitas para o porquê de não gravar direto.
+// EN: First-party audience measurement — nothing is sent to third parties, so there is no
+//     international transfer and no other domain's cookie. The buffer is a singleton (it
+//     accumulates across requests), the service is scoped (it uses the DbContext) and
+//     FlushVisitas persists periodically — see BufferVisitas for why it doesn't write
+//     directly.
+builder.Services.AddSingleton<BufferVisitas>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddHostedService<FlushVisitasService>();
 
 // PT: Envio real de e-mail (Gmail via SMTP, ver Services/SmtpEmailSender.cs) —
 //     usado pelo fluxo de "esqueci minha senha" (ContaController). Configuração
@@ -490,6 +504,14 @@ app.UseAuthorization();
 //     checks. In production, the variable is never set and rate limiting stays
 //     active normally.
 if (app.Configuration["DesativarRateLimiting"] != "true") app.UseRateLimiter();
+
+// PT: Depois do UseStaticFiles para que requisição de CSS/imagem nem chegue aqui, e depois
+//     da autenticação porque o caminho contado é o mesmo para todos — o middleware não lê
+//     identidade, só o caminho e o cookie de medição.
+// EN: After UseStaticFiles so CSS/image requests never reach it, and after authentication
+//     because the counted path is the same for everyone — the middleware reads no identity,
+//     only the path and the measurement cookie.
+app.UseMiddleware<RegistroVisitaMiddleware>();
 
 app.MapHealthChecks("/health");
 

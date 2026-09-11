@@ -1,0 +1,93 @@
+@{
+    ViewData["Title"] = "Preferências de cookies";
+    var decisao = ViewData["Decisao"] as string;
+    var aceitou = decisao == "aceito";
+    var recusou = decisao == "recusado";
+}
+
+<div class="row justify-content-center my-5">
+    <div class="col-lg-7">
+
+        <p class="section-eyebrow">LGPD</p>
+        <h2 class="mb-4">Preferências de cookies</h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Cookies necessários</h5>
+                <p class="text-muted mb-2">
+                    Mantêm você conectado e protegem os formulários contra falsificação de
+                    requisição. Sem eles não é possível entrar na conta nem enviar um
+                    formulário.
+                </p>
+                @* PT: Mostrado como estado, não como controle. Um botão desligado que não
+                       desliga nada seria pior do que não ter botão — o honesto é dizer que
+                       essa parte não é opcional e explicar por quê.
+                   EN: Shown as a state, not a control. A disabled toggle that doesn't turn
+                       anything off would be worse than no toggle — the honest thing is to
+                       say this part isn't optional and explain why. *@
+                <span class="badge bg-secondary">Sempre ativos</span>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Cookie de medição (opcional)</h5>
+                <p class="text-muted mb-3">
+                    Guarda um identificador aleatório no seu navegador para que o site
+                    consiga distinguir uma visita nova de um retorno. Não é ligado ao seu
+                    nome nem à sua conta, e <strong>nada é enviado para fora</strong> — a
+                    medição é feita pelo próprio SisHospedar, sem Google nem qualquer outro
+                    serviço externo.
+                </p>
+
+                <p class="mb-3">
+                    Situação atual:
+                    @if (aceitou)
+                    {
+                        <span class="badge bg-success">Ativado por você</span>
+                    }
+                    else if (recusou)
+                    {
+                        <span class="badge bg-secondary">Recusado por você</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Ainda não escolhido</span>
+                    }
+                </p>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <form asp-action="Consentimento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="aceito" value="true" />
+                        <button type="submit" class="btn btn-primary btn-sm" disabled="@aceitou">
+                            Ativar medição
+                        </button>
+                    </form>
+                    <form asp-action="Consentimento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="aceito" value="false" />
+                        <button type="submit" class="btn btn-outline-secondary btn-sm" disabled="@recusou">
+                            Desativar medição
+                        </button>
+                    </form>
+                </div>
+
+                @if (aceitou)
+                {
+                    <p class="text-muted mt-3 mb-0" style="font-size:.88rem;">
+                        Ao desativar, o identificador é apagado do seu navegador na mesma hora
+                        — não apenas deixa de ser usado.
+                    </p>
+                }
+            </div>
+        </div>
+
+        <p class="text-muted" style="font-size:.9rem;">
+            Você pode mudar de ideia quantas vezes quiser, e a escolha vale só para este
+            navegador. Detalhes de cada cookie estão na
+            <a asp-action="Cookies">Política de Cookies</a>.
+        </p>
+
+    </div>
+</div>
