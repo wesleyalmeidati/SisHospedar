@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -124,6 +125,28 @@ builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieS
 // EN: In-process memory cache — used by HomeController.Index to avoid hitting the
 //     database on every visit to the public home page. No external service, no cost.
 builder.Services.AddMemoryCache();
+
+// PT: Guarda o chaveiro do Data Protection no banco em vez do disco do contêiner
+//     (ver o comentário em AppDbContext.DataProtectionKeys). Sem isso, cada deploy
+//     descartava as chaves: todo mundo era deslogado e quem tinha um formulário aberto
+//     recebia AntiforgeryValidationException ao enviar. Usa o SQL que o projeto já tem,
+//     então não adiciona nenhum recurso pago.
+// EN: Stores the Data Protection key ring in the database instead of the container's
+//     disk (see the comment on AppDbContext.DataProtectionKeys). Without this, every
+//     deploy discarded the keys: everyone was signed out and anyone with an open form
+//     got an AntiforgeryValidationException on submit. It uses the SQL database the
+//     project already has, so it adds no paid resource.
+builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
+
+// PT: Só liveness ("o processo responde?"), sem checar o banco de propósito: o Azure SQL
+//     é tier Basic (5 DTU) e uma sonda periódica batendo nele gastaria a capacidade que a
+//     aplicação precisa. Para detectar processo travado, que é o caso de uso real aqui,
+//     responder 200 já basta.
+// EN: Liveness only ("is the process responding?"), deliberately not checking the
+//     database: the Azure SQL is Basic tier (5 DTU) and a periodic probe hitting it would
+//     burn the capacity the app itself needs. To detect a hung process, which is the real
+//     use case here, returning 200 is enough.
+builder.Services.AddHealthChecks();
 
 builder.Services.AddControllersWithViews();
 
@@ -461,6 +484,8 @@ app.UseAuthorization();
 //     checks. In production, the variable is never set and rate limiting stays
 //     active normally.
 if (app.Configuration["DesativarRateLimiting"] != "true") app.UseRateLimiter();
+
+app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",

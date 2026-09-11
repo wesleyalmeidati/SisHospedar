@@ -31,7 +31,7 @@ dotnet ef database update
 
 ### Deploy
 
-Runs in production as a container: `Dockerfile` (multi-stage: SDK to build/publish, `aspnet:8.0` runtime for the final image, listens on `:8080` via `ASPNETCORE_URLS`) → pushed to Docker Hub (`wesleysales/sishospedar`) → running on Azure Container Apps (`env-sishospedar`/`sishospedar`, resource group `rg-sishospedar`), backed by Azure SQL Database (`sql-sishospedar-wsales-br`, Basic tier).
+Runs in production as a container: `Dockerfile` (multi-stage: SDK to build/publish, `aspnet:10.0` runtime for the final image, listens on `:8080` via `ASPNETCORE_URLS`) → pushed to Docker Hub (`wesleysales/sishospedar`) → running on Azure Container Apps (`env-sishospedar`/`sishospedar`, resource group `rg-sishospedar`), backed by Azure SQL Database (`sql-sishospedar-wsales-br`, Basic tier).
 
 Redeploy is automated: `.github/workflows/ci.yml`'s `deploy` job runs on every push to `main` that passes `build-and-test`, and tags the image with the commit's short SHA (never a bare `:latest` — Container Apps only creates a new revision when the image *string* changes, and reusing `:latest` once let a bug ship without the site actually updating). It authenticates to Azure via a Service Principal scoped to just `rg-sishospedar` (`AZURE_CREDENTIALS` GitHub secret) and to Docker Hub via `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN`. New migrations still need `dotnet ef database update` run against the production connection string manually (see README's Deploy section) — the pipeline deliberately never applies migrations automatically, to keep anything schema-destructive under direct supervision.
 
@@ -48,6 +48,19 @@ Coverage: `AutorizacaoFuncionarioTests` (anonymous access redirects, wrong `Carg
 ### CI (`.github/workflows/ci.yml`)
 
 Runs on every push/PR to `main`: restore, build (Release), `dotnet test`, then `dotnet ef migrations has-pending-model-changes` — the last step is what would have caught the `InitialCreate`-vs-model drift found earlier in this project (missing `Hospede.Login`/`Reservas`/etc.) before it ever reached a clone. None of this needs a real SQL Server: the workflow sets `ConnectionStrings__DefaultConnection` to a dummy value purely to satisfy `Program.cs`'s startup guard clause — tests run against in-memory SQLite, and the pending-migrations check only compares the in-code model against the last migration's snapshot, no live connection required.
+
+### Observability
+
+There is no APM and no telemetry package (Application Insights/OpenTelemetry/Serilog would all add cost or dependencies the project doesn't need). Observability is the container's stdout: Container Apps ships it to a Log Analytics workspace (30-day retention), queryable with KQL via `az monitor log-analytics query`. The workspace has a **0.2 GB/day ingestion cap** — roughly 650× normal usage — set deliberately as a guard against a runaway log loop generating a bill on a project with no budget.
+
+Two logging rules this project settled on, both learned from reading real production logs:
+
+- **`Microsoft.EntityFrameworkCore.Database.Command` is pinned to `Warning`** in `appsettings.json`. At the inherited `Default: Information` it logged every SQL statement, and 82 of 91 log lines in a 24-hour window were SQL — the real signal was unreadable. (`EnableSensitiveDataLogging` is off, so parameter *values* never reached the logs even then; only the statement shape did.)
+- **Business events are logged in `Services/`, never in controllers, and carry ids only — never `Nome`, `Cpf`, `Email` or any PII**, since logs are long-retained and broadly readable. `AutenticacaoService` logs *only* account lockout, not individual failed attempts: someone typing their password into the username field would otherwise write their own password into a retained log, and lockout is the rare, actionable event worth attributing to an account.
+
+`/health` is a liveness endpoint (`AddHealthChecks()` with no registered checks) — deliberately **not** a database check, because the Azure SQL is Basic tier (5 DTU) and a periodic probe querying it would consume capacity the app itself needs.
+
+**Data Protection keys live in the database** (`AppDbContext.DataProtectionKeys` via `PersistKeysToDbContext<AppDbContext>()`, migration `PersistenciaChavesDataProtection`). The default is to write them to disk inside the container, which Container Apps discards on every deploy — production logs showed one new key ring per container start and a daily `AntiforgeryValidationException` ("key not found in the key ring"), meaning every deploy silently signed out all users and broke any form that was already open. The existing SQL database was chosen over Blob Storage or Key Vault specifically because it adds no paid resource. The remaining `XmlKeyManager` warning ("No XML encryptor configured") is accepted: encrypting the key ring at rest would require Key Vault, and Azure SQL already encrypts at rest via TDE.
 
 ### Local setup
 

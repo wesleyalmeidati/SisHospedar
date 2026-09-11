@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SisHospedar.Models;
 
@@ -9,9 +10,27 @@ namespace SisHospedar.Data
     // EN: Replaces the original project's ConexaoBanco.cs / manual DAOs. EF Core
     //     generates and runs parameterized queries automatically, and the connection
     //     string NEVER lives in source code (see Program.cs / appsettings).
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        // PT: Chaveiro do Data Protection (assina o cookie de autenticação e o token de
+        //     antiforgery). Por padrão as chaves são gravadas em disco DENTRO do contêiner
+        //     (/root/.aspnet/DataProtection-Keys), que é descartado a cada deploy — o que
+        //     invalidava todo cookie e todo formulário aberto. Os logs de produção mostravam
+        //     exatamente isso: uma chave nova por inicialização de contêiner e
+        //     AntiforgeryValidationException ("key not found in the key ring") todos os dias.
+        //     Guardar o chaveiro aqui resolve usando o banco que o projeto já tem, sem
+        //     depender de Blob Storage ou Key Vault (que teriam custo).
+        // EN: Data Protection key ring (signs the auth cookie and the antiforgery token).
+        //     By default keys are written to disk INSIDE the container
+        //     (/root/.aspnet/DataProtection-Keys), which is discarded on every deploy —
+        //     invalidating every cookie and every open form. Production logs showed exactly
+        //     that: a new key per container start and a daily AntiforgeryValidationException
+        //     ("key not found in the key ring"). Keeping the key ring here solves it using
+        //     the database the project already has, with no Blob Storage or Key Vault
+        //     (which would cost money).
+        public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
         public DbSet<Hospede> Hospedes => Set<Hospede>();
         public DbSet<Apartamento> Apartamentos => Set<Apartamento>();

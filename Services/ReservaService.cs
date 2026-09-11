@@ -7,7 +7,13 @@ namespace SisHospedar.Services
     public class ReservaService : IReservaService
     {
         private readonly AppDbContext _context;
-        public ReservaService(AppDbContext context) => _context = context;
+        private readonly ILogger<ReservaService> _logger;
+
+        public ReservaService(AppDbContext context, ILogger<ReservaService> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         public async Task<(bool Sucesso, string? Erro)> CriarPedidoAsync(Reserva reserva)
         {
@@ -37,7 +43,12 @@ namespace SisHospedar.Services
                 r.DataEntrada < reserva.DataSaidaPrevista &&
                 r.DataSaidaPrevista > reserva.DataEntrada);
             if (conflito)
+            {
+                _logger.LogWarning(
+                    "Pedido de reserva recusado por conflito de datas: apartamento {ApartamentoId}, período {Entrada:yyyy-MM-dd} a {Saida:yyyy-MM-dd}.",
+                    reserva.ApartamentoId, reserva.DataEntrada, reserva.DataSaidaPrevista);
                 return (false, "Já existe uma reserva para este apartamento nesse período.");
+            }
 
             // PT: Marca o apartamento como Reservado — ele some das listas de "disponível
             //     pra reservar/check-in" (ReservaController.Create, HospedagemController.Create)
@@ -50,6 +61,10 @@ namespace SisHospedar.Services
             reserva.Status = StatusReserva.Pendente;
             _context.Add(reserva);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Pedido de reserva criado: reserva {ReservaId}, apartamento {ApartamentoId} marcado como Reservado.",
+                reserva.ReservaId, reserva.ApartamentoId);
             return (true, null);
         }
 
@@ -63,7 +78,12 @@ namespace SisHospedar.Services
                 return null;
 
             if (reserva.Apartamento == null || reserva.Apartamento.Status != StatusApartamento.Reservado)
+            {
+                _logger.LogWarning(
+                    "Confirmação recusada: reserva {ReservaId} aponta para apartamento {ApartamentoId} em {Status}, esperado Reservado.",
+                    reservaId, reserva.ApartamentoId, reserva.Apartamento?.Status.ToString() ?? "inexistente");
                 return "Apartamento não está mais disponível para confirmar esta reserva.";
+            }
 
             // PT: Confirmar a reserva = fazer o check-in (cria a Hospedagem de verdade).
             // EN: Confirming the booking = performing check-in (creates the actual Hospedagem).
@@ -81,6 +101,9 @@ namespace SisHospedar.Services
             _context.Add(hospedagem);
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation(
+                "Reserva {ReservaId} confirmada: hospedagem {HospedagemId} criada, apartamento {ApartamentoId} ocupado.",
+                reservaId, hospedagem.HospedagemId, reserva.ApartamentoId);
             return "Reserva confirmada e check-in realizado.";
         }
 
@@ -96,6 +119,10 @@ namespace SisHospedar.Services
                 reserva.Apartamento.Status = StatusApartamento.Disponivel;
 
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Reserva {ReservaId} cancelada; apartamento {ApartamentoId} liberado.",
+                reservaId, reserva.ApartamentoId);
             return true;
         }
     }

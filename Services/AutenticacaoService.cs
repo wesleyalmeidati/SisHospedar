@@ -14,15 +14,18 @@ namespace SisHospedar.Services
         private readonly AppDbContext _context;
         private readonly SignInManager<Funcionario> _signInManagerFuncionario;
         private readonly SignInManager<Hospede> _signInManagerHospede;
+        private readonly ILogger<AutenticacaoService> _logger;
 
         public AutenticacaoService(
             AppDbContext context,
             SignInManager<Funcionario> signInManagerFuncionario,
-            SignInManager<Hospede> signInManagerHospede)
+            SignInManager<Hospede> signInManagerHospede,
+            ILogger<AutenticacaoService> logger)
         {
             _context = context;
             _signInManagerFuncionario = signInManagerFuncionario;
             _signInManagerHospede = signInManagerHospede;
+            _logger = logger;
         }
 
         // PT: Tenta como funcionário primeiro, depois como hóspede — as duas tabelas
@@ -57,8 +60,21 @@ namespace SisHospedar.Services
                     await http.SignInAsync(Esquemas.Funcionario, new ClaimsPrincipal(new ClaimsIdentity(claims, Esquemas.Funcionario)));
                     return (ResultadoLogin.Sucesso, TipoIdentidadeLogada.Funcionario);
                 }
+                // PT: Só o bloqueio é registrado, e só ele carrega o login. Tentativa
+                //     inválida isolada não vira log de propósito: alguém que digita a senha
+                //     no campo de usuário por engano colocaria a própria senha no log, que
+                //     tem retenção longa. O bloqueio é raro, é acionável (indica ataque ou
+                //     usuário travado) e precisa dizer qual conta foi afetada.
+                // EN: Only lockout is logged, and only it carries the login. A single failed
+                //     attempt is deliberately not logged: someone who types their password
+                //     into the username field would put their own password into a
+                //     long-retained log. Lockout is rare, actionable (it signals an attack or
+                //     a stuck user) and has to say which account was affected.
                 if (resultado.IsLockedOut)
+                {
+                    _logger.LogWarning("Conta de funcionário bloqueada por tentativas inválidas: {Login}.", login);
                     return (ResultadoLogin.ContaBloqueada, null);
+                }
             }
 
             var hospede = await _context.Hospedes.FirstOrDefaultAsync(h => h.Login == login);
@@ -76,7 +92,10 @@ namespace SisHospedar.Services
                     return (ResultadoLogin.Sucesso, TipoIdentidadeLogada.Hospede);
                 }
                 if (resultado.IsLockedOut)
+                {
+                    _logger.LogWarning("Conta de hóspede bloqueada por tentativas inválidas: {Login}.", login);
                     return (ResultadoLogin.ContaBloqueada, null);
+                }
             }
 
             return (ResultadoLogin.CredenciaisInvalidas, null);
