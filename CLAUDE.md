@@ -164,6 +164,12 @@ The fourth was different in kind: **an employee could delete their own account w
 
 Two of the six tests in that file (`ExcluirSemVinculos_Funciona`, `ExcluirOutroFuncionarioContinuaFuncionando`) pass with or without the fixes, on purpose: they're the counterweight that stops an over-broad guard from silently disabling deletion altogether. The other four fail when the protections are reverted — which is how they were verified.
 
+### Password-reset hostile cases (`IdentityTests`)
+
+The happy path was already covered; the hostile side was not. `IdentityTests` now also pins that a reset token **can't be reused**, **doesn't work on another account**, and **is rejected when tampered with**. No bug was found here — the protection comes from Identity's own token provider (`ResetPasswordAsync` rotates the `SecurityStamp`, invalidating the token that carried the previous one), not from this project's code.
+
+That is exactly why the tests matter: nothing in `ContaController` makes the guarantee visible, so a future change of token provider or a hand-rolled "simplification" could weaken it silently. Verified with teeth: making the controller ignore the supplied token fails all three.
+
 ### Screen-level bugs found by sweeping untested actions (`ValidacaoDeTelaTests`)
 
 Four more bugs, all sharing a failure mode: nothing crashes, nothing reaches the log, and in three of them the user can't tell anything went wrong.
