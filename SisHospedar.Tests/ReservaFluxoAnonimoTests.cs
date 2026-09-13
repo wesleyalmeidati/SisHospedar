@@ -176,6 +176,53 @@ public class ReservaFluxoAnonimoTests : TestesIntegracaoBase
         Assert.Contains(saida, formulario);
     }
 
+    // PT: Estes dois vieram de teste adversarial: uma reserva de DEZ ANOS era aceita sem
+    //     reclamação. As checagens existentes não pegavam — a data era futura e a saída
+    //     vinha depois da entrada. O problema não é estadia longa, é ano digitado errado:
+    //     um "2036" no lugar de "2026" bloqueia o apartamento como Reservado até alguém
+    //     perceber e cancelar na mão.
+    // EN: These two came from adversarial testing: a TEN-YEAR booking was accepted without
+    //     complaint. The existing checks didn't catch it — the date was in the future and
+    //     checkout came after check-in. The problem isn't a long stay, it's a mistyped year:
+    //     a "2036" instead of "2026" locks the room as Reservado until someone notices and
+    //     cancels it by hand.
+
+    [Fact]
+    public async Task Reserva_ComEstadiaDeAnos_ERecusada()
+    {
+        var apartamentoId = await CriarApartamentoAsync();
+        var client = CriarCliente();
+
+        var resposta = await PostComAntiforgeryAsync(client, "/Reserva/Create", "/Reserva/Create",
+            new Dictionary<string, string>
+            {
+                ["ApartamentoId"] = apartamentoId.ToString(),
+                ["DataEntrada"] = DateTime.Today.AddDays(30).ToString("yyyy-MM-dd"),
+                ["DataSaidaPrevista"] = DateTime.Today.AddYears(10).ToString("yyyy-MM-dd")
+            });
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        Assert.Contains("não pode passar de um ano", WebUtility.HtmlDecode(await resposta.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task Reserva_ComEntradaMuitoDistante_ERecusada()
+    {
+        var apartamentoId = await CriarApartamentoAsync();
+        var client = CriarCliente();
+
+        var resposta = await PostComAntiforgeryAsync(client, "/Reserva/Create", "/Reserva/Create",
+            new Dictionary<string, string>
+            {
+                ["ApartamentoId"] = apartamentoId.ToString(),
+                ["DataEntrada"] = DateTime.Today.AddYears(5).ToString("yyyy-MM-dd"),
+                ["DataSaidaPrevista"] = DateTime.Today.AddYears(5).AddDays(3).ToString("yyyy-MM-dd")
+            });
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        Assert.Contains("muito distante", WebUtility.HtmlDecode(await resposta.Content.ReadAsStringAsync()));
+    }
+
     [Fact]
     public async Task Login_NaoAceitaRetornoParaOutroDominio()
     {

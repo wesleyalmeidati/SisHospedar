@@ -10,6 +10,20 @@ namespace SisHospedar.Services
     {
         Task<(bool Sucesso, string? Erro)> CriarPedidoAsync(Reserva reserva);
 
+        // PT: Só as regras de data, sem tocar o banco — devolve a mensagem de erro ou null.
+        //     Existe porque o fluxo anônimo precisa validar ANTES de mandar a pessoa criar
+        //     conta: as regras rodavam só dentro de CriarPedidoAsync, que no caminho anônimo
+        //     só é alcançado depois do login. Quem digitasse o ano errado fazia todo o
+        //     cadastro para só então descobrir. CriarPedidoAsync chama este mesmo método,
+        //     então continua havendo uma fonte única da regra.
+        // EN: The date rules only, touching no database — returns the error message or null.
+        //     It exists because the anonymous flow has to validate BEFORE sending someone off
+        //     to create an account: the rules used to live only inside CriarPedidoAsync,
+        //     which on the anonymous path is reached only after login. Anyone mistyping the
+        //     year completed the whole sign-up only to find out afterwards. CriarPedidoAsync
+        //     calls this same method, so there is still a single source for the rule.
+        string? ValidarDatas(Reserva reserva);
+
         // PT: Retorna a mensagem a exibir via TempData, ou null quando a reserva não
         //     existe mais ou já não está Pendente (o controller apenas redireciona
         //     em silêncio nesse caso, como no comportamento original).

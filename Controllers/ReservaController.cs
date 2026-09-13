@@ -82,6 +82,25 @@ namespace SisHospedar.Controllers
 
             if (!identidade.Succeeded)
             {
+                // PT: As regras de data também valem antes do cadastro. Elas moram no
+                //     service (fonte única, usada também por CriarPedidoAsync), mas
+                //     CriarPedidoAsync só é alcançado depois do login — então, sem esta
+                //     chamada, quem digitasse o ano errado faria a conta inteira para só
+                //     então descobrir. Mesmo princípio da checagem de disponibilidade logo
+                //     abaixo: tudo que dá para recusar agora é recusado agora.
+                // EN: The date rules apply before sign-up too. They live in the service
+                //     (single source, also used by CriarPedidoAsync), but CriarPedidoAsync
+                //     is only reached after login — so without this call, anyone mistyping
+                //     the year would create the whole account only to find out afterwards.
+                //     Same principle as the availability check just below: anything that can
+                //     be refused now is refused now.
+                var erroDeData = _reservaService.ValidarDatas(reserva);
+                if (erroDeData != null)
+                {
+                    ModelState.AddModelError("", erroDeData);
+                    return RecarregarFormulario(reserva, autenticado: false);
+                }
+
                 // PT: Checagem barata antes de exigir cadastro: se o apartamento já não
                 //     está disponível, avisa agora. Sem isso, a pessoa faria todo o
                 //     cadastro para receber "indisponível" no fim.

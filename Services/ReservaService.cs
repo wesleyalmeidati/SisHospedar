@@ -15,13 +15,42 @@ namespace SisHospedar.Services
             _logger = logger;
         }
 
-        public async Task<(bool Sucesso, string? Erro)> CriarPedidoAsync(Reserva reserva)
+        // PT: Os dois últimos limites existem para pegar ANO DIGITADO ERRADO, não para
+        //     restringir estadia longa. Um "2036" no lugar de "2026" passava nas duas
+        //     primeiras checagens — data futura, saída depois da entrada — e criava uma
+        //     reserva de dez anos que deixava o apartamento como Reservado até alguém
+        //     perceber e cancelar na mão. O erro é plausível (um dígito) e o estrago é
+        //     desproporcional. Os valores são folgados de propósito: um ano de estadia
+        //     cobre qualquer hospedagem longa real, e dois anos de antecedência cobrem
+        //     qualquer reserva antecipada legítima.
+        // EN: The last two limits exist to catch a MISTYPED YEAR, not to restrict long
+        //     stays. A "2036" in place of "2026" passed the first two checks — future date,
+        //     checkout after check-in — and created a ten-year booking that left the room
+        //     marked Reservado until someone noticed and cancelled it by hand. The mistake
+        //     is plausible (one digit) and the damage is disproportionate. The values are
+        //     deliberately generous: a one-year stay covers any real long stay, and two
+        //     years ahead covers any legitimate advance booking.
+        public string? ValidarDatas(Reserva reserva)
         {
             if (reserva.DataSaidaPrevista <= reserva.DataEntrada)
-                return (false, "A data de saída deve ser depois da data de entrada.");
+                return "A data de saída deve ser depois da data de entrada.";
 
             if (reserva.DataEntrada < DateTime.Today)
-                return (false, "A data de entrada não pode ser no passado.");
+                return "A data de entrada não pode ser no passado.";
+
+            if ((reserva.DataSaidaPrevista - reserva.DataEntrada).TotalDays > 365)
+                return "A estadia não pode passar de um ano. Confira as datas informadas.";
+
+            if (reserva.DataEntrada > DateTime.Today.AddYears(2))
+                return "A data de entrada está muito distante. Confira o ano informado.";
+
+            return null;
+        }
+
+        public async Task<(bool Sucesso, string? Erro)> CriarPedidoAsync(Reserva reserva)
+        {
+            var erroDeData = ValidarDatas(reserva);
+            if (erroDeData != null) return (false, erroDeData);
 
             var apartamento = await _context.Apartamentos.FindAsync(reserva.ApartamentoId);
             if (apartamento == null || apartamento.Status != StatusApartamento.Disponivel)
