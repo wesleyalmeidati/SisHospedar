@@ -58,6 +58,17 @@ namespace SisHospedar.Controllers
             if (id == null) return NotFound();
             var hospede = await _context.Hospedes.FindAsync(id);
             if (hospede == null) return NotFound();
+
+            // PT: Ver Hospede.EstaAnonimizado para o porquê. A recusa acontece já no GET para
+            //     a recepção não perder tempo preenchendo um formulário que nunca salvaria.
+            // EN: See Hospede.EstaAnonimizado for the reasoning. The refusal happens on the
+            //     GET so reception doesn't waste time filling in a form that would never save.
+            if (hospede.EstaAnonimizado)
+            {
+                TempData["Erro"] = "Esta ficha foi anonimizada a pedido do titular e não pode ser editada.";
+                return RedirectToAction(nameof(Index));
+            }
+
             return View(hospede);
         }
 
@@ -66,6 +77,21 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> Edit(int id, [Bind("HospedeId,Nome,Cpf,Telefone,DataNascimento")] Hospede hospede)
         {
             if (id != hospede.HospedeId) return NotFound();
+
+            // PT: O GET já recusa, mas o POST precisa recusar também — a checagem é contra a
+            //     linha GRAVADA, não contra o que veio no formulário, senão bastaria enviar um
+            //     CPF qualquer no corpo para repersonalizar uma ficha anonimizada.
+            // EN: The GET already refuses, but the POST has to refuse too — and the check is
+            //     against the STORED row, not against what arrived in the form, otherwise
+            //     posting any CPF in the body would be enough to re-personalize an anonymized
+            //     record.
+            var gravado = await _context.Hospedes.AsNoTracking().FirstOrDefaultAsync(h => h.HospedeId == id);
+            if (gravado == null) return NotFound();
+            if (gravado.EstaAnonimizado)
+            {
+                TempData["Erro"] = "Esta ficha foi anonimizada a pedido do titular e não pode ser editada.";
+                return RedirectToAction(nameof(Index));
+            }
 
             if (ModelState.IsValid)
             {

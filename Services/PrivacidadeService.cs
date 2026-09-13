@@ -127,7 +127,7 @@ namespace SisHospedar.Services
             //     id. It's 12 characters and the column takes 14. It won't pass CpfValido,
             //     but that validation only runs on form binding, never against a stored row.
             hospede.Nome = "Titular removido";
-            hospede.Cpf = $"ANON{hospedeId:D8}";
+            hospede.Cpf = $"{Hospede.PrefixoCpfAnonimizado}{hospedeId:D8}";
             hospede.Telefone = string.Empty;
             hospede.DataNascimento = new DateTime(1900, 1, 1);
             hospede.Email = null;

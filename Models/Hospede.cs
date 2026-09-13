@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SisHospedar.Models
 {
@@ -16,6 +17,17 @@ namespace SisHospedar.Models
     //     Authentication/EntityUserStore.cs.
     public class Hospede : IContaAutenticavel
     {
+        // PT: Marcador gravado no CPF quando o titular pede exclusão e há histórico a
+        //     preservar (ver PrivacidadeService.ExcluirContaAsync). Vive aqui, e não solto
+        //     como string no service, porque duas partes do sistema precisam concordar sobre
+        //     ele: quem anonimiza e quem detecta que já está anonimizado.
+        // EN: Marker written into the CPF when the data subject requests erasure and there is
+        //     history to preserve (see PrivacidadeService.ExcluirContaAsync). It lives here
+        //     rather than as a loose string in the service because two parts of the system
+        //     have to agree on it: the one that anonymizes and the one that detects an
+        //     already-anonymized record.
+        public const string PrefixoCpfAnonimizado = "ANON";
+
         public int HospedeId { get; set; }
 
         // PT: Ver o mesmo comentário em Funcionario.cs — evita renomear HospedeId.
@@ -71,6 +83,23 @@ namespace SisHospedar.Models
 
         public ICollection<Hospedagem> Hospedagens { get; set; } = new List<Hospedagem>();
         public ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
+
+        // PT: Uma ficha anonimizada não pode ser editada pela recepção, e antes disto o
+        //     sistema falhava nisso de um jeito confuso: o CPF vira um marcador que não passa
+        //     no CpfValido, então abrir a ficha e salvar qualquer coisa devolvia "CPF
+        //     inválido" num campo que ninguém tinha tocado, sem saída nenhuma.
+        //     Recusar explicitamente é melhor por dois motivos: a mensagem diz a verdade, e
+        //     reeditar uma ficha anonimizada seria repersonalizar um dado que o titular pediu
+        //     para remover — o contrário do que a anonimização existe para fazer.
+        // EN: An anonymized record must not be edited by reception, and before this the system
+        //     failed at that confusingly: the CPF becomes a marker that doesn't pass
+        //     CpfValido, so opening the record and saving anything returned "CPF inválido" on
+        //     a field nobody had touched, with no way out.
+        //     Refusing explicitly is better for two reasons: the message tells the truth, and
+        //     re-editing an anonymized record would re-personalize data the subject asked to
+        //     have removed — the opposite of what anonymization exists to do.
+        [NotMapped]
+        public bool EstaAnonimizado => Cpf.StartsWith(PrefixoCpfAnonimizado, StringComparison.Ordinal);
 
         // PT: Campos exigidos por IUserSecurityStampStore/IUserLockoutStore
         //     (EntityUserStore) — nunca preenchidos por formulário, só pelo

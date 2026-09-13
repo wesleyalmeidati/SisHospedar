@@ -3,7 +3,21 @@
 <h2>Novo Funcionário</h2>
 <div class="col-md-5">
 <form asp-action="Create" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @* PT: "All", não "ModelOnly". O controller joga os erros do Identity (senha fraca,
+           login gerado com caractere inválido, login duplicado) na chave "senha", que é
+           erro de PROPRIEDADE — e "ModelOnly" exibe só os erros sem campo associado. O
+           resultado era uma tela que voltava em 200 sem dizer absolutamente nada: a
+           recepção clicava em salvar, a página recarregava e o funcionário não era criado,
+           sem nenhuma pista do motivo. O formulário de autocadastro do hóspede não tinha
+           esse problema porque usa spans por campo.
+       EN: "All", not "ModelOnly". The controller puts Identity's errors (weak password,
+           generated login with an invalid character, duplicate login) under the "senha"
+           key, which is a PROPERTY-level error — and "ModelOnly" shows only errors with no
+           associated field. The result was a screen returning 200 saying absolutely
+           nothing: reception clicked save, the page reloaded, the employee wasn't created,
+           and there was no hint why. The guest self-registration form didn't have this
+           problem because it uses per-field spans. *@
+    <div asp-validation-summary="All" class="text-danger"></div>
     <div class="mb-3"><label asp-for="Nome" class="form-label"></label><input asp-for="Nome" class="form-control" /></div>
     <div class="mb-3"><label asp-for="Cargo" class="form-label"></label>
         <select asp-for="Cargo" class="form-select" asp-items="Html.GetEnumSelectList<CargoFuncionario>()"></select>

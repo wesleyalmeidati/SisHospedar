@@ -221,12 +221,36 @@ namespace SisHospedar.Controllers
             var hospedagem = await _context.Hospedagens
                 .FirstOrDefaultAsync(h => h.HospedagemId == hospedagemId && h.HospedeId == hospedeId);
 
-            if (hospedagem != null && !hospedagem.Finalizada && novaDataSaida > hospedagem.DataEntrada)
+            if (hospedagem == null || hospedagem.Finalizada)
+                return RedirectToAction(nameof(MinhaConta));
+
+            // PT: A única checagem aqui era "depois da data de entrada", o que deixava passar
+            //     duas coisas absurdas numa estadia EM ANDAMENTO: prorrogar para uma data já
+            //     no passado (a estadia ficava com saída anterior a hoje e ainda aberta, com
+            //     o apartamento Ocupado) e prorrogar para 2060. O nome da ação é prorrogar —
+            //     a data tem que ser futura, e o teto existe pelo mesmo motivo do limite nas
+            //     reservas: pegar ano digitado errado.
+            // EN: The only check here was "after the check-in date", which let two absurd
+            //     things through on an ONGOING stay: extending to a date already in the past
+            //     (the stay ended up with a checkout before today and still open, with the
+            //     room Ocupado) and extending to 2060. The action is called "extend" — the
+            //     date has to be in the future, and the ceiling exists for the same reason as
+            //     the booking limit: catching a mistyped year.
+            if (novaDataSaida.Date <= DateTime.Today)
             {
-                hospedagem.DataSaida = novaDataSaida;
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Estadia prorrogada com sucesso.";
+                TempData["Erro"] = "A nova data de saída precisa ser depois de hoje.";
+                return RedirectToAction(nameof(MinhaConta));
             }
+
+            if (novaDataSaida.Date > DateTime.Today.AddYears(1))
+            {
+                TempData["Erro"] = "A nova data de saída está muito distante. Confira o ano informado.";
+                return RedirectToAction(nameof(MinhaConta));
+            }
+
+            hospedagem.DataSaida = novaDataSaida;
+            await _context.SaveChangesAsync();
+            TempData["Sucesso"] = "Estadia prorrogada com sucesso.";
             return RedirectToAction(nameof(MinhaConta));
         }
 

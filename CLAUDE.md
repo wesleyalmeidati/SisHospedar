@@ -164,6 +164,17 @@ The fourth was different in kind: **an employee could delete their own account w
 
 Two of the six tests in that file (`ExcluirSemVinculos_Funciona`, `ExcluirOutroFuncionarioContinuaFuncionando`) pass with or without the fixes, on purpose: they're the counterweight that stops an over-broad guard from silently disabling deletion altogether. The other four fail when the protections are reverted — which is how they were verified.
 
+### Screen-level bugs found by sweeping untested actions (`ValidacaoDeTelaTests`)
+
+Four more bugs, all sharing a failure mode: nothing crashes, nothing reaches the log, and in three of them the user can't tell anything went wrong.
+
+- **`Views/Funcionario/Create.cshtml` swallowed every Identity error.** It used `asp-validation-summary="ModelOnly"`, which renders only errors with no associated field — but the controller puts Identity's failures (weak password, invalid generated login, duplicate login) under the `"senha"` key, a *property-level* error. A weak password returned 200, reloaded the form, created nothing and said **nothing at all**. Now `"All"`. The guest self-registration form never had this because it uses per-field spans.
+- **A name with an apostrophe couldn't be registered.** `RemoverAcentos` only folded accents, so "Maria D'Angelo" generated the login `maria.d'angelo`; `'` isn't in Identity's default `AllowedUserNameCharacters` (letters, digits, `-._@+`), `CreateAsync` failed, and the View bug above made it silent. It's now `NormalizarParaLogin`, which also drops anything that isn't a letter or digit — while still *folding* accents, so "João" becomes `joao`, not `joo`. `CriarFuncionarioComAcento_MantemALetraBase` exists precisely so the stripping never swallows the folding.
+- **An anonymized guest record could not be edited, confusingly.** The anonymization marker in `Cpf` doesn't pass `[CpfValido]`, so opening the record and saving anything returned "CPF inválido" on a field nobody had touched, with no way out. Reception now gets an explicit refusal — and the right answer isn't "make the validator accept the marker": re-editing an anonymized record would re-personalize data the subject asked to remove. The check lives on the model (`Hospede.EstaAnonimizado` + `PrefixoCpfAnonimizado`, shared with `PrivacidadeService`) and runs on **both** GET and POST, the POST checking the **stored row** rather than the submitted form — otherwise posting any valid CPF would de-anonymize the record.
+- **`ClienteController.Prorrogar` accepted a date in the past.** Its only check was "after the check-in date", so on a stay that began three days ago you could extend to the day before yesterday — leaving a stay with a checkout before today, still open, room still `Ocupado`. It also accepted 2060. Now the date must be in the future and within a year, the same mistyped-year reasoning as `ReservaService.ValidarDatas`.
+
+Both test files from these sweeps deliberately include **counterweights** — tests that pass with or without the fix (`ExcluirSemVinculos_Funciona`, `ExcluirOutroFuncionarioContinuaFuncionando`, `CriarFuncionarioComAcento_MantemALetraBase`, `Prorrogar_ParaDataFuturaRazoavel_Funciona`). They exist because an over-broad guard that refuses *everything* would satisfy all the negative tests, and nothing would catch it.
+
 ### Field validation on `Hospede` (found by adversarial testing)
 
 A deliberate round of hostile input against `/Cliente/Registrar` found three gaps that broke nothing visibly — they just let impossible data into the registry:

@@ -111,7 +111,17 @@ namespace SisHospedar.Controllers
         private async Task<string> GerarLoginUnicoAsync(string nome)
         {
             var partes = nome.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(RemoverAcentos).ToArray();
+                .Select(NormalizarParaLogin)
+                .Where(p => p.Length > 0)
+                .ToArray();
+
+            // PT: Se o nome inteiro virar vazio depois de normalizar (nome só com pontuação,
+            //     por exemplo), não há base para montar login — cai no genérico e o sufixo
+            //     numérico garante unicidade.
+            // EN: If the whole name normalizes to nothing (a name made only of punctuation,
+            //     say), there is no base to build a login from — fall back to a generic one
+            //     and let the numeric suffix guarantee uniqueness.
+            if (partes.Length == 0) return await PrimeiroLivreAsync("funcionario");
 
             if (partes.Length == 1) return await PrimeiroLivreAsync(partes[0]);
 
@@ -145,14 +155,33 @@ namespace SisHospedar.Controllers
             return login;
         }
 
-        private static string RemoverAcentos(string texto)
+        // PT: Tira acento E descarta o que não for letra ou dígito. O descarte foi
+        //     acrescentado depois: antes só os acentos saíam, então "Maria D'Angelo" gerava
+        //     o login "maria.d'angelo" — e o apóstrofo não está em AllowedUserNameCharacters
+        //     do Identity, cujo padrão é letras, dígitos e "-._@+". O CreateAsync falhava, o
+        //     erro ia para a chave "senha" e a tela (com validation-summary "ModelOnly") não
+        //     exibia nada: sobrenome com apóstrofo simplesmente não cadastrava, em silêncio.
+        //     Acento continua sendo removido em vez de descartado, porque "João" precisa
+        //     virar "joao", não "joo".
+        // EN: Strips accents AND drops anything that isn't a letter or digit. The dropping
+        //     was added afterwards: previously only accents were removed, so "Maria D'Angelo"
+        //     produced the login "maria.d'angelo" — and the apostrophe isn't in Identity's
+        //     AllowedUserNameCharacters, whose default is letters, digits and "-._@+".
+        //     CreateAsync failed, the error went to the "senha" key and the screen (with a
+        //     "ModelOnly" validation summary) displayed nothing: a surname with an apostrophe
+        //     simply didn't register, silently.
+        //     Accents are still folded rather than dropped, because "João" has to become
+        //     "joao", not "joo".
+        private static string NormalizarParaLogin(string texto)
         {
             var normalizado = texto.Normalize(NormalizationForm.FormD);
-            var semAcento = new StringBuilder();
+            var limpo = new StringBuilder();
             foreach (var c in normalizado)
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                    semAcento.Append(c);
-            return semAcento.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
+                if (char.IsLetterOrDigit(c)) limpo.Append(c);
+            }
+            return limpo.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
         }
 
         public async Task<IActionResult> Delete(int? id)
