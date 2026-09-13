@@ -85,12 +85,33 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var apartamento = await _context.Apartamentos.FindAsync(id);
-            if (apartamento != null)
+            if (apartamento == null) return RedirectToAction(nameof(Index));
+
+            // PT: Mesmo caso de HospedeController: as FKs de Reserva e Hospedagem para
+            //     Apartamento são Restrict, então o banco recusa o DELETE e antes disto o
+            //     usuário recebia uma página 500. Um apartamento que já foi usado nunca
+            //     poderá ser excluído — o caminho correto para tirá-lo de operação é mudar
+            //     o Status para Manutencao, que já existe no modelo e o remove das listas de
+            //     disponíveis.
+            // EN: Same case as HospedeController: the Reserva and Hospedagem FKs to
+            //     Apartamento are Restrict, so the database refuses the DELETE and the user
+            //     previously got a 500 page. A room that has been used can never be deleted —
+            //     the correct way to take it out of service is changing its Status to
+            //     Manutencao, which already exists on the model and drops it from the
+            //     available lists.
+            var emUso = await _context.Reservas.AnyAsync(r => r.ApartamentoId == id)
+                     || await _context.Hospedagens.AnyAsync(h => h.ApartamentoId == id);
+
+            if (emUso)
             {
-                _context.Apartamentos.Remove(apartamento);
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Apartamento removido.";
+                TempData["Erro"] = "Este apartamento tem reservas ou hospedagens registradas e não pode ser removido. " +
+                                   "Para tirá-lo de operação, mude o status para Manutenção.";
+                return RedirectToAction(nameof(Index));
             }
+
+            _context.Apartamentos.Remove(apartamento);
+            await _context.SaveChangesAsync();
+            TempData["Sucesso"] = "Apartamento removido.";
             return RedirectToAction(nameof(Index));
         }
     }

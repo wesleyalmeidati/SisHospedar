@@ -85,12 +85,30 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var produto = await _context.Produtos.FindAsync(id);
-            if (produto != null)
+            if (produto == null) return RedirectToAction(nameof(Index));
+
+            // PT: Consumo → Produto é Restrict (Consumo → Hospedagem é que cascateia), então
+            //     produto já consumido não sai: o banco recusa e o usuário recebia 500.
+            //     A restrição é proposital — apagar o produto apagaria a descrição do que o
+            //     hóspede consumiu de uma conta já fechada. Para tirar de linha, zere o
+            //     estoque.
+            // EN: Consumo → Produto is Restrict (it's Consumo → Hospedagem that cascades), so
+            //     a product already consumed can't go: the database refuses and the user got
+            //     a 500. The restriction is deliberate — deleting the product would erase the
+            //     description of what a guest consumed on an already-closed bill. To
+            //     discontinue it, set the stock to zero.
+            var jaConsumido = await _context.Consumos.AnyAsync(c => c.ProdutoId == id);
+
+            if (jaConsumido)
             {
-                _context.Produtos.Remove(produto);
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Produto removido.";
+                TempData["Erro"] = "Este produto já foi consumido por algum hóspede e não pode ser removido, " +
+                                   "porque isso apagaria o histórico de consumo. Para tirá-lo de linha, zere o estoque.";
+                return RedirectToAction(nameof(Index));
             }
+
+            _context.Produtos.Remove(produto);
+            await _context.SaveChangesAsync();
+            TempData["Sucesso"] = "Produto removido.";
             return RedirectToAction(nameof(Index));
         }
     }

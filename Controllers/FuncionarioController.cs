@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -167,12 +168,42 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var funcionario = await _context.Funcionarios.FindAsync(id);
-            if (funcionario != null)
+            if (funcionario == null) return RedirectToAction(nameof(Index));
+
+            // PT: Antes disto era possível excluir a PRÓPRIA conta enquanto logado. A conta
+            //     sumia, o cookie continuava valendo apontando para um funcionário que não
+            //     existe mais, e a pessoa ficava num limbo: autenticada para o handler de
+            //     cookie, inexistente para a aplicação.
+            // EN: Before this it was possible to delete your OWN account while logged in. The
+            //     account vanished, the cookie stayed valid pointing at an employee who no
+            //     longer exists, and the person ended up in limbo: authenticated as far as
+            //     the cookie handler is concerned, nonexistent to the application.
+            var meuId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (funcionario.FuncionarioId == meuId)
             {
-                _context.Funcionarios.Remove(funcionario);
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Funcionário removido.";
+                TempData["Erro"] = "Você não pode excluir a sua própria conta. Peça a outro Administrador ou Gerente.";
+                return RedirectToAction(nameof(Index));
             }
+
+            // PT: NÃO existe aqui uma regra separada de "não excluir o último gestor", e a
+            //     ausência é deliberada. Cheguei a escrever uma, e o teste mostrou que ela
+            //     nunca dispararia: só Administrador e Gerente alcançam esta tela (ver
+            //     [RequerCargo] na classe), então quem exclui é sempre um gestor — e, com a
+            //     regra de autoexclusão acima, ele nunca é o excluído. Excluir qualquer outra
+            //     pessoa portanto sempre deixa pelo menos ele. A contagem de gestores nunca
+            //     chega a zero, e o invariante "sempre sobra alguém capaz de cadastrar acesso"
+            //     já está garantido pela regra de cima, sozinha.
+            // EN: There is deliberately NO separate "don't delete the last manager" rule here.
+            //     I wrote one, and the test showed it could never fire: only Administrador and
+            //     Gerente reach this screen (see [RequerCargo] on the class), so whoever
+            //     deletes is always a manager — and, with the self-deletion rule above, never
+            //     the one being deleted. Deleting anyone else therefore always leaves at least
+            //     them. The manager count never reaches zero, and the invariant "someone
+            //     capable of registering access always remains" is already guaranteed by the
+            //     rule above, on its own.
+            _context.Funcionarios.Remove(funcionario);
+            await _context.SaveChangesAsync();
+            TempData["Sucesso"] = "Funcionário removido.";
             return RedirectToAction(nameof(Index));
         }
 

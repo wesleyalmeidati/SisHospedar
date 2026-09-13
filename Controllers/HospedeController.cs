@@ -98,12 +98,42 @@ namespace SisHospedar.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var hospede = await _context.Hospedes.FindAsync(id);
-            if (hospede != null)
+            if (hospede == null) return RedirectToAction(nameof(Index));
+
+            // PT: As FKs de Reserva e Hospedagem para Hospede são DeleteBehavior.Restrict
+            //     (ver AppDbContext), então remover um hóspede com histórico faz o banco
+            //     recusar o DELETE. Sem esta checagem, o SaveChangesAsync lançava
+            //     DbUpdateException e a recepção via uma página de erro 500 — sem explicação
+            //     nenhuma do que houve nem do que fazer.
+            //     A checagem vem ANTES do Remove de propósito: assim a mensagem diz o motivo
+            //     real, em vez de traduzir um erro de banco depois do fato.
+            // EN: The Reserva and Hospedagem FKs to Hospede are DeleteBehavior.Restrict (see
+            //     AppDbContext), so removing a guest with history makes the database refuse
+            //     the DELETE. Without this check, SaveChangesAsync threw a DbUpdateException
+            //     and reception got a 500 error page — with no explanation of what happened
+            //     or what to do.
+            //     The check comes BEFORE the Remove on purpose: that way the message states
+            //     the real reason instead of translating a database error after the fact.
+            var temReservas = await _context.Reservas.AnyAsync(r => r.HospedeId == id);
+            var temHospedagens = await _context.Hospedagens.AnyAsync(h => h.HospedeId == id);
+
+            if (temReservas || temHospedagens)
             {
-                _context.Hospedes.Remove(hospede);
-                await _context.SaveChangesAsync();
-                TempData["Sucesso"] = "Hóspede removido.";
+                // PT: O próprio hóspede tem um caminho que funciona neste caso — a exclusão
+                //     pela conta dele anonimiza em vez de apagar, preservando o histórico
+                //     que a legislação fiscal exige (ver PrivacidadeService).
+                // EN: The guest themselves has a path that works here — deleting from their
+                //     own account anonymizes instead of erasing, preserving the history tax
+                //     law requires (see PrivacidadeService).
+                TempData["Erro"] = "Este hóspede tem reservas ou hospedagens registradas e não pode ser removido. " +
+                                   "Para remover os dados pessoais preservando o histórico, o próprio hóspede pode " +
+                                   "pedir a exclusão pela conta dele.";
+                return RedirectToAction(nameof(Index));
             }
+
+            _context.Hospedes.Remove(hospede);
+            await _context.SaveChangesAsync();
+            TempData["Sucesso"] = "Hóspede removido.";
             return RedirectToAction(nameof(Index));
         }
     }

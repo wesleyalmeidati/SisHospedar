@@ -154,6 +154,16 @@ The POST also does a cheap availability check *before* redirecting to login, so 
 - `Hospedagem.TotalConsumo` and `Consumo.ValorTotal` are computed `[NotMapped]` properties, not persisted columns.
 - `Hospede.Cpf` carries `[CpfValido]` (`Models/CpfValidoAttribute.cs`) — a real modulo-11 check-digit validator, not just a length/format check, and it rejects all-same-digit sequences (`111.111.111-11` etc.) that satisfy the formula mathematically but are never real issued CPFs. It only runs during `ModelState` validation on a controller-bound request, never against rows already in the database, so it doesn't touch existing data — but that's also exactly why `Program.cs`'s seeded guests carry real calculated check digits (`Ana Beatriz Souza`'s CPF ends in `-09`, not the old placeholder `-01`): editing one of them through `HospedeController.Edit` without touching the CPF re-validates it on save, and the old sequential placeholders would fail the real algorithm.
 
+### Deletion screens (`ExclusaoProtegidaTests`)
+
+Every `DeleteConfirmed` action was untested, and four had bugs. Three shared one cause: `Reserva`/`Hospedagem` point at `Hospede` and `Apartamento` with `DeleteBehavior.Restrict`, and `Consumo → Produto` likewise, but the controllers did `Remove` + `SaveChangesAsync` with no check — so the database refused the DELETE, `DbUpdateException` went unhandled, and the user got a **500 page** with no explanation. Each now checks for dependents *before* removing, so the message states the real reason and points at the right alternative (`Manutencao` status for a room, zeroing stock for a product, guest-initiated anonymization for a guest — reception's hard delete and `PrivacidadeService`'s anonymization are two different paths with different semantics).
+
+The fourth was different in kind: **an employee could delete their own account while logged in**, leaving a valid cookie pointing at a `Funcionario` that no longer exists — authenticated to the cookie handler, nonexistent to the app. If they were the last Administrador/Gerente, nobody could ever register staff again, including recreating their own access; there is no recovery path through the UI.
+
+**There is deliberately no separate "don't delete the last manager" rule.** One was written and the tests proved it unreachable: only Administrador/Gerente reach the screen (`[RequerCargo]`), so the actor is always a manager and — with self-deletion blocked — never the target, meaning deleting anyone else always leaves at least them. The count never reaches zero. It was dead code and was removed; the self-deletion rule alone guarantees the invariant.
+
+Two of the six tests in that file (`ExcluirSemVinculos_Funciona`, `ExcluirOutroFuncionarioContinuaFuncionando`) pass with or without the fixes, on purpose: they're the counterweight that stops an over-broad guard from silently disabling deletion altogether. The other four fail when the protections are reverted — which is how they were verified.
+
 ### Field validation on `Hospede` (found by adversarial testing)
 
 A deliberate round of hostile input against `/Cliente/Registrar` found three gaps that broke nothing visibly — they just let impossible data into the registry:
