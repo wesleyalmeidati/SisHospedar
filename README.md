@@ -191,7 +191,11 @@ Duas conferências independentes validaram os números: o SQL Basic tem preço d
 
 O banco de produção continha apenas seed, contadores de audiência e hóspedes fictícios de teste — por isso não foi feito export `.bacpac`, o que também evitou criar uma Storage Account só para guardá-lo.
 
-**Como trazer de volta**, se algum dia for necessário: recriar o resource group, o Azure SQL e o Container App apontando para a imagem no Docker Hub, rodar `dotnet ef database update` contra o banco novo e restaurar o job `deploy` no CI a partir do histórico do Git. Leva algo em torno de 20–30 minutos. Para rodar a aplicação e vê-la funcionando, porém, não é preciso nada disso — o [passo a passo local](#como-rodar-localmente) resolve em poucos minutos e não depende de nuvem nenhuma.
+**Como trazer de volta**, se algum dia for necessário: recriar o resource group, o Azure SQL e o Container App apontando para a imagem no Docker Hub, rodar `dotnet ef database update` contra o banco novo e restaurar o job `deploy` no CI a partir do histórico do Git. Leva algo em torno de 30–45 minutos.
+
+Se isso acontecer, vale saber que **existe um caminho gratuito que não foi usado aqui**, descoberto depois da desativação. O [free offer do Azure SQL Database](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer?view=azuresql) dá 100.000 vCore-segundos, 32 GB de dados e 32 GB de backup por mês, por banco (até 10 por assinatura), pela vida da assinatura e em qualquer tipo de conta — incluindo Pay-As-You-Go. O detalhe que mais importa é a opção **"Auto-pause the database until next month"**: ao atingir o limite, o banco **para** em vez de gerar cobrança, o que é um teto de verdade. Combinado com `minReplicas: 0` no Container App, o custo esperado seria R$ 0.
+
+Duas ressalvas para essa rota: o Container Apps **não** tem trava equivalente (se algo mantiver o container acordado, volta a cobrar — daí a importância de um alerta de orçamento), e o free offer **não converte um banco existente**, só vale para bancos criados já sob a oferta. A região dos bancos gratuitos também fica travada na primeira escolha feita na assinatura, então subir tudo em Brazil South de uma vez resolveria de quebra a latência do East US que aparece nas notas de desempenho. Para rodar a aplicação e vê-la funcionando, porém, não é preciso nada disso — o [passo a passo local](#como-rodar-localmente) resolve em poucos minutos e não depende de nuvem nenhuma.
 
 ## E-mail
 
