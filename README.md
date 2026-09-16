@@ -1,6 +1,6 @@
 # SisHospedar
 
-**🔗 Aplicação no ar: [sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io](https://sishospedar.livelyriver-83f49c4e.eastus.azurecontainerapps.io/)** — login `luan.santos` / senha `Senha123` (ver [credenciais de teste](#credenciais-de-teste))
+> **Demonstração online desativada em 16/09/2026.** O projeto esteve no ar em Azure Container Apps + Azure SQL de 07/09 a 16/09/2026; a infraestrutura foi desligada por decisão de custo após a conclusão do TCC — os números e o raciocínio estão em [Desativação da infraestrutura](#desativação-da-infraestrutura). O sistema roda localmente em poucos minutos: ver [Como rodar localmente](#como-rodar-localmente).
 
 Sistema de gestão hoteleira desenvolvido em **ASP.NET Core MVC (.NET 10)** com **Entity Framework Core**, permitindo o controle de hóspedes, apartamentos, reservas, hospedagens, funcionários, produtos e consumo.
 
@@ -52,7 +52,7 @@ Permite ao hóspede:
 | Acesso a dados | Entity Framework Core (SQL Server) |
 | Frontend | Razor Views + Bootstrap 5, com design system próprio (`wwwroot/css/site.css`) |
 | Autenticação | Cookie authentication nativa do ASP.NET Core (2 esquemas independentes) + ASP.NET Core Identity (`UserManager`/`SignInManager`, hash, lockout, reset de senha) |
-| Deploy | Docker (`Dockerfile` multi-stage) → Docker Hub → Azure Container Apps, banco em Azure SQL Database |
+| Deploy | Docker (`Dockerfile` multi-stage) → Docker Hub → Azure Container Apps, banco em Azure SQL Database *(desativado em 16/09/2026)* |
 
 ## O que mudou em relação à versão original (2013)
 
@@ -121,12 +121,14 @@ Para testar o portal do hóspede, crie uma conta nova em `/Cliente/Registrar` �
 
 ## Deploy
 
-A aplicação roda em produção como **container** — mesma imagem Docker que builda localmente, sem código específico de nuvem:
+> A infraestrutura descrita nesta seção **foi desativada em 16/09/2026** (ver [Desativação da infraestrutura](#desativação-da-infraestrutura)). O que está documentado aqui continua válido como registro do que foi construído e como reconstruir — a imagem no Docker Hub e as migrations no repositório são suficientes para subir tudo de novo.
+
+A aplicação rodava em produção como **container** — mesma imagem Docker que builda localmente, sem código específico de nuvem:
 
 ```
 Dockerfile (multi-stage: build com o SDK, imagem final só com o runtime)
    → docker build / docker push → Docker Hub (wesleysales/sishospedar)
-   → Azure Container Apps (env-sishospedar, plano de consumo, dentro do tier gratuito)
+   → Azure Container Apps (env-sishospedar, plano de consumo)
    → Azure SQL Database (sql-sishospedar-wsales-br, tier Basic)
 ```
 
@@ -134,7 +136,9 @@ Motivo de Container Apps em vez de App Service: a assinatura usada não tinha co
 
 ### Redeploy — automático via CI/CD
 
-Todo push em `main` que passa no `build-and-test` dispara o job `deploy` (`.github/workflows/ci.yml`): builda a imagem, tagueia com o SHA curto do commit (nunca `:latest` sozinho — ver a nota abaixo), dá push no Docker Hub, autentica no Azure via um Service Principal com Contributor restrito ao resource group `rg-sishospedar` (secret `AZURE_CREDENTIALS`) e roda `az containerapp update --image wesleysales/sishospedar:<sha>`. Não precisa mais rodar nada manualmente — só dar merge/push em `main`.
+> O job `deploy` foi **removido** do `.github/workflows/ci.yml` em 16/09/2026, junto com a desativação dos recursos no Azure — sem o Container App do outro lado, ele falharia em todo push. O CI segue rodando build, testes e verificação de *drift* de migration. O parágrafo abaixo descreve como o deploy funcionava.
+
+Todo push em `main` que passava no `build-and-test` disparava o job `deploy` (`.github/workflows/ci.yml`): buildava a imagem, tagueava com o SHA curto do commit (nunca `:latest` sozinho — ver a nota abaixo), dava push no Docker Hub, autenticava no Azure via um Service Principal com Contributor restrito ao resource group `rg-sishospedar` (secret `AZURE_CREDENTIALS`) e rodava `az containerapp update --image wesleysales/sishospedar:<sha>`. Não era preciso rodar nada manualmente — só dar merge/push em `main`.
 
 **Por que tag com SHA em vez de `:latest`**: o Container Apps só cria uma revisão nova quando a *string* de imagem muda. Com `:latest` fixo, um `update` pode "ter sucesso" sem detectar que o conteúdo da imagem mudou, e o site continua servindo a revisão antiga (isso aconteceu de verdade — foi assim que o bug do símbolo "¤" ficou no ar mesmo depois do primeiro redeploy). Tagueando com o SHA do commit, toda imagem tem uma string diferente, então toda atualização vira revisão nova de forma garantida.
 
@@ -154,6 +158,40 @@ dotnet ef database update
 ```
 
 (Precisa liberar seu IP no firewall do SQL Server antes: `az sql server firewall-rule create --resource-group rg-sishospedar --server sql-sishospedar-wsales-br --name AllowMyIP --start-ip-address <seu-ip> --end-ip-address <seu-ip>` — remova a regra depois com `az sql server firewall-rule delete`.)
+
+### Desativação da infraestrutura
+
+O resource group `rg-sishospedar` foi deletado em **16/09/2026**, encerrando a hospedagem. A decisão saiu de medição, não de estimativa — e o que ela revelou vale mais do que a economia.
+
+A premissa inicial era que o Container Apps caberia no tier gratuito (este README chegou a afirmar isso). A fatura real, consultada via Cost Management API com granularidade diária e quebra por serviço, mostrou outra coisa:
+
+| Data | Container Apps | SQL Basic |
+|---|---|---|
+| 07/09 (parcial) | R$ 0,00 | R$ 0,34 |
+| 08–10/09 | **R$ 0,00** | R$ 1,01/dia |
+| 11/09 | R$ 0,34 | R$ 1,01 |
+| 12–15/09 | **R$ 2,01/dia** | R$ 1,01/dia |
+
+O Container Apps custou exatamente zero por quatro dias e então ligou. A causa é aritmética: a cota gratuita é de **180.000 vCPU-segundos e 360.000 GiB-segundos por mês**, e `minReplicas: 1` com 0,5 vCPU consome 43.200 vCPU-s/dia — a cota dura **4,2 dias**. Os recursos nasceram em 07/09 às 16h; 07/09 + 4,2 dias cai em 11/09, exatamente onde o custo subiu. A cota reseta todo mês, então o padrão se repetiria: ~4 dias grátis e ~26 dias pagos.
+
+Custo em regime: **~R$ 90/mês** — R$ 30 de SQL Basic e R$ 60 de container ocioso, para um site de demonstração praticamente sem tráfego. Dois terços da conta eram a aplicação esperando visita.
+
+Duas conferências independentes validaram os números: o SQL Basic tem preço de tabela de US$ 4,90/mês (≈ R$ 30 ✓), e a taxa *idle* do Container Apps aplicada a 43.200 vCPU-s + 86.400 GiB-s/dia dá ≈ US$ 0,39/dia (≈ R$ 2,10 ✓).
+
+**O que foi descartado por não compensar.** Migrar o SQL para *serverless com auto-pause* parecia a saída óbvia — e o código até colabora, porque `FlushVisitasService.DescarregarAsync` retorna antes de abrir conexão quando não há visitas, e `/health` deliberadamente não consulta o banco. Mas o auto-pause tem atraso mínimo de 60 minutos e o serverless cobra por vCore-hora ativa: uma única visita no dia acorda o banco por uma hora inteira, e ~19 horas ativas no mês já empatam com o Basic. Sairia mais caro, com *cold start* de banco de brinde.
+
+**O que sobrevive à desativação.** Nada insubstituível estava só na nuvem:
+
+| Artefato | Onde vive |
+|---|---|
+| Código | este repositório |
+| Schema do banco | as 9 migrations em `Migrations/` |
+| Dados de exemplo | o seed no `Program.cs` |
+| Imagem executável | Docker Hub, `wesleysales/sishospedar` |
+
+O banco de produção continha apenas seed, contadores de audiência e hóspedes fictícios de teste — por isso não foi feito export `.bacpac`, o que também evitou criar uma Storage Account só para guardá-lo.
+
+**Como trazer de volta**, se algum dia for necessário: recriar o resource group, o Azure SQL e o Container App apontando para a imagem no Docker Hub, rodar `dotnet ef database update` contra o banco novo e restaurar o job `deploy` no CI a partir do histórico do Git. Leva algo em torno de 20–30 minutos. Para rodar a aplicação e vê-la funcionando, porém, não é preciso nada disso — o [passo a passo local](#como-rodar-localmente) resolve em poucos minutos e não depende de nuvem nenhuma.
 
 ## E-mail
 
@@ -210,7 +248,7 @@ SisHospedar/
 - [x] Prevenção de reserva duplicada (conflito de datas) e status `Reservado` no apartamento
 - [x] Redesign completo da interface (design system próprio, fora do Bootstrap padrão)
 - [x] Migração para ASP.NET Core Identity completo (`UserManager`/`SignInManager`, lockout, reset de senha) — via uma store customizada (`EntityUserStore`, ver `CLAUDE.md`) em vez de herdar `IdentityUser<T>`, evitando a duplicação de tabelas de apoio que o caminho "óbvio" exigiria para duas identidades independentes
-- [x] Deploy em nuvem — Docker + Docker Hub + Azure Container Apps + Azure SQL Database (ver seção [Deploy](#deploy)); link no topo deste README
+- [x] Deploy em nuvem — Docker + Docker Hub + Azure Container Apps + Azure SQL Database (ver seção [Deploy](#deploy)); infraestrutura desativada em 16/09/2026 por decisão de custo, ver [Desativação da infraestrutura](#desativação-da-infraestrutura)
 - [x] E-mail de verdade para o link de redefinição de senha — `IEmailSender`/`SmtpEmailSender` via Gmail (ver seção [E-mail](#e-mail))
 - [x] CI/CD automatizado — build + testes + push + `containerapp update` a cada push em `main` (ver `.github/workflows/ci.yml`), tagueando a imagem com o SHA do commit em vez de `:latest`
 - [x] Rate limiting por IP em login, registro e "esqueci minha senha" (`Microsoft.AspNetCore.RateLimiting`, nativo do ASP.NET Core, sem custo) — complementa o lockout por conta do Identity, que trava uma conta específica mas não impede alguém de varrer várias contas diferentes a partir do mesmo IP

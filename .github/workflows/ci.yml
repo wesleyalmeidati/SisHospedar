@@ -49,58 +49,23 @@ jobs:
           dotnet tool install --global dotnet-ef --version 10.0.12
           dotnet ef migrations has-pending-model-changes --project SisHospedar.csproj
 
-  # PT: Só roda em push direto pra main (não em PR) e só depois que build-and-test
-  #     passar. Tagueia a imagem com o SHA curto do commit (nunca só ":latest") —
-  #     é isso que garante que "az containerapp update --image" sempre detecte uma
-  #     imagem diferente e crie uma revisão nova; ver a nota no README sobre a
-  #     armadilha de reusar a mesma tag entre deploys.
-  #     Migrations não são aplicadas automaticamente aqui — continuam manuais (ver
-  #     seção "Redeploy" do README), pra nunca rodar uma migration destrutiva sem
-  #     supervisão direta contra o banco de produção.
-  # EN: Only runs on a direct push to main (not on a PR) and only after
-  #     build-and-test passes. Tags the image with the commit's short SHA (never
-  #     just ":latest") — that's what guarantees "az containerapp update --image"
-  #     always detects a different image and creates a new revision; see the
-  #     README note about the pitfall of reusing the same tag across deploys.
-  #     Migrations are not applied automatically here — they stay manual (see the
-  #     README's "Redeploy" section), so a destructive migration never runs
-  #     unsupervised against the production database.
-  deploy:
-    needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Login no Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build e push da imagem
-        run: |
-          TAG="${{ github.sha }}"
-          TAG="${TAG:0:7}"
-          docker build -t wesleysales/sishospedar:$TAG -t wesleysales/sishospedar:latest .
-          docker push wesleysales/sishospedar:$TAG
-          docker push wesleysales/sishospedar:latest
-
-      - name: Login no Azure
-        uses: azure/login@v3
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Atualiza o Container App
-        uses: azure/cli@v3
-        with:
-          inlineScript: |
-            TAG="${{ github.sha }}"
-            TAG="${TAG:0:7}"
-            az containerapp update \
-              --name sishospedar \
-              --resource-group rg-sishospedar \
-              --image wesleysales/sishospedar:$TAG
+  # PT: O job "deploy" foi removido em 16/09/2026, junto com a desativação da
+  #     infraestrutura no Azure (resource group rg-sishospedar). Ele publicava a imagem
+  #     no Docker Hub e atualizava o Container App; sem o recurso do outro lado, rodaria
+  #     vermelho em todo push. A decisão veio de medição, não de palpite: o Container
+  #     Apps concede 180.000 vCPU-s e 360.000 GiB-s por mês, e com minReplicas=1 a
+  #     0,5 vCPU a cota se esgotava em ~4,2 dias — o custo diário saltava de R$ 1,01
+  #     (só o SQL) para R$ 3,02 a partir daí, ~R$ 90/mês para um site de demonstração
+  #     praticamente sem tráfego. Ver a seção "Desativação da infraestrutura" no
+  #     CLAUDE.md para os números completos e o caminho de volta.
+  #     O CI continua validando o que importa: build, testes e drift de migration.
+  # EN: The "deploy" job was removed on 2026-09-16, along with the decommissioning of
+  #     the Azure infrastructure (resource group rg-sishospedar). It pushed the image to
+  #     Docker Hub and updated the Container App; with the resource gone, it would fail
+  #     on every push. The decision came from measurement, not guesswork: Container Apps
+  #     grants 180,000 vCPU-s and 360,000 GiB-s per month, and with minReplicas=1 at
+  #     0.5 vCPU that grant ran out in ~4.2 days — daily cost jumped from R$ 1.01
+  #     (SQL alone) to R$ 3.02 from then on, ~R$ 90/month for a demo site with
+  #     essentially no traffic. See "Desativação da infraestrutura" in CLAUDE.md for the
+  #     full figures and the path back.
+  #     CI still validates what matters: build, tests and migration drift.
